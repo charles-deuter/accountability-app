@@ -1,0 +1,99 @@
+package dev.accountabilityapp.ui.tasklist
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.accountabilityapp.R
+import dev.accountabilityapp.appContainer
+import dev.accountabilityapp.theme.AccountabilityAppTheme
+import dev.accountabilityapp.ui.formatDateTime
+import java.time.Instant
+
+@Composable
+fun TaskListScreen(onAddTask: () -> Unit, modifier: Modifier = Modifier) {
+  val container = LocalContext.current.appContainer
+  val viewModel: TaskListViewModel = viewModel { TaskListViewModel(container.taskRepository, container.clock) }
+  val state by viewModel.uiState.collectAsStateWithLifecycle()
+  TaskListScreen(state = state, onAddTask = onAddTask, modifier = modifier)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TaskListScreen(state: TaskListUiState, onAddTask: () -> Unit, modifier: Modifier = Modifier) {
+  Scaffold(
+    modifier = modifier,
+    topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+    floatingActionButton = {
+      FloatingActionButton(onClick = onAddTask) { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_task)) }
+    },
+  ) { innerPadding ->
+    if (state.items.isEmpty()) {
+      Box(Modifier.fillMaxSize().padding(innerPadding).padding(24.dp), contentAlignment = Alignment.Center) {
+        Text(stringResource(R.string.task_list_empty), style = MaterialTheme.typography.bodyLarge)
+      }
+    } else {
+      LazyColumn(Modifier.fillMaxSize().padding(innerPadding)) {
+        items(state.items, key = { it.id }) { item ->
+          TaskRow(item)
+          HorizontalDivider()
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun TaskRow(item: TaskListItem) {
+  val overdueColor = MaterialTheme.colorScheme.error
+  val accentColor = if (item.isOverdue) overdueColor else MaterialTheme.colorScheme.onSurfaceVariant
+  val fireTimeLabel = item.fireTime.formatDateTime()
+  val overdueLabel = stringResource(R.string.overdue)
+  val supportingText = if (item.isOverdue) "$overdueLabel · $fireTimeLabel" else fireTimeLabel
+  val headlineColor = if (item.isOverdue) overdueColor else MaterialTheme.colorScheme.onSurface
+  ListItem(
+    headlineContent = { Text(item.title) },
+    supportingContent = { Text(supportingText, color = accentColor) },
+    colors = ListItemDefaults.colors(headlineColor = headlineColor),
+  )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TaskListScreenPreview() {
+  AccountabilityAppTheme {
+    TaskListScreen(
+      state =
+        TaskListUiState(
+          listOf(
+            TaskListItem(1, "Take meds", Instant.parse("2026-10-21T09:00:00Z"), isOverdue = true),
+            TaskListItem(2, "Call dentist", Instant.parse("2026-10-22T15:00:00Z"), isOverdue = false),
+          )
+        ),
+      onAddTask = {},
+    )
+  }
+}

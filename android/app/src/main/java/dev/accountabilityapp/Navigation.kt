@@ -4,15 +4,20 @@ import androidx.compose.runtime.Composable
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import dev.accountabilityapp.ui.home.HomeScreen
+import dev.accountabilityapp.ui.addtask.AddTaskScreen
+import dev.accountabilityapp.ui.tasklist.TaskListScreen
 
 @Composable
 fun MainNavigation() {
-  val backStack = rememberNavBackStack(Home)
+  val backStack = rememberNavBackStack(TaskList)
 
   NavDisplay(
     backStack = backStack,
     onBack = { backStack.removeLastOrNull() },
-    entryProvider = entryProvider { entry<Home> { HomeScreen() } },
+    entryProvider =
+      entryProvider {
+        entry<TaskList> { TaskListScreen(onAddTask = { backStack.add(AddTask) }) }
+        entry<AddTask> { AddTaskScreen(onDone = { backStack.removeLastOrNull() }) }
+      },
   )
 }

@@ -3,6 +3,7 @@ plugins {
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.ksp)
+  alias(libs.plugins.room)
 }
 
 android {
@@ -10,7 +11,8 @@ android {
     compileSdk = 36
     defaultConfig {
         applicationId = "dev.accountabilityapp"
-        minSdk = 24
+        // 26: java.time ships from Android 8.0, so no core-library desugaring is needed.
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -48,6 +50,10 @@ android {
     }
 }
 
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 kotlin {
     // 21, not 17: Robolectric needs a Java 21 runtime to emulate SDK 35+.
     jvmToolchain(21)
@@ -71,6 +77,7 @@ dependencies {
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.compose.material3)
+  implementation(libs.androidx.compose.material.icons.core)
   // Tooling
   debugImplementation(libs.androidx.compose.ui.tooling)
   // Instrumented tests
