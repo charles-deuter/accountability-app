@@ -11,5 +11,6 @@
 - [ ] R8 minification on for release, with keep rules so Room, receivers, and the takeover activity still work — verified by installing the release build on the emulator and firing one reminder
 - [ ] versionCode/versionName scheme documented in the README
 - [ ] Adaptive and monochrome icon from ticket 18 wired in
+- [ ] Replace the placeholder applicationId and namespace `dev.accountabilityapp` with the final ID (it becomes permanent at the first Play upload), and move the Kotlin package to match
 - [ ] Target SDK meets the current Play requirement
 - [ ] README documents how to build the release bundle

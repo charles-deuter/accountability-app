@@ -22,7 +22,7 @@
 - SDK: `~/Library/Android/sdk`
 - SDK Platform: API 37 (`android-37.0`)
 - System image: API 37, `google_apis_playstore`, `arm64-v8a`
-- AVD: `Medium_Phone` (API 37)
+- AVD: `Medium_Phone_API_37.0` (API 37). The folder on disk is `Medium_Phone.avd`, but the CLI and the emulator use this ID
 - JDK: Android Studio JBR, OpenJDK 25.0.3
 - `adb` 1.0.41 (platform-tools 37.0.1)
 - Command-line Tools ship the new **Android CLI** (`android`, version 1.0.16625370). `sdkmanager` still runs but prints a deprecation warning; `android sdk install|list|update|remove` replaces it. The CLI also covers emulator start/stop, app install/run, screenshots, UI layout trees, input gestures, and docs search. Docs: https://d.android.com/tools/agents/android-cli
