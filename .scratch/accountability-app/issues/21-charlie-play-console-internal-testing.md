@@ -1,6 +1,6 @@
 # 21: [Charlie] Play Console setup and internal testing track
 
-**What to build:** Nag available to friends through Play's testing tracks. Every step lives in Charlie's Play Console account. Claude can draft listing copy and declaration answers on request.
+**What to build:** Accountability App available to friends through Play's testing tracks. Every step lives in Charlie's Play Console account. Claude can draft listing copy and declaration answers on request.
 
 **Blocked by:** 02, 12, 19, 20
 

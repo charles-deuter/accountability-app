@@ -1,6 +1,6 @@
 # 17: Visual polish — custom Material 3 colour scheme and animations
 
-**What to build:** Nag stops looking like a default template. A custom Material 3 colour scheme (light and dark) gives a clean, intentional feel. Completing a task gets a satisfying animation — the highest-priority animation per the PRD. Other animations are added case by case only where they aid clarity.
+**What to build:** Accountability App stops looking like a default template. A custom Material 3 colour scheme (light and dark) gives a clean, intentional feel. Completing a task gets a satisfying animation — the highest-priority animation per the PRD. Other animations are added case by case only where they aid clarity.
 
 **Blocked by:** 15, 16
 

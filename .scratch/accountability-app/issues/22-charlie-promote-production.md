@@ -1,6 +1,6 @@
 # 22: [Charlie] Promote to production
 
-**What to build:** Nag live on the Play Store for anyone to install.
+**What to build:** Accountability App live on the Play Store for anyone to install.
 
 **Blocked by:** 21
 

@@ -1,4 +1,4 @@
-# Nag
+# Accountability App
 
 ADHD-focused Android reminder app. Product spec: `docs/PRD.md`.
 
@@ -6,7 +6,7 @@ ADHD-focused Android reminder app. Product spec: `docs/PRD.md`.
 
 ### Issue tracker
 
-Local markdown under `.scratch/`; Nag v1 tickets live in `.scratch/nag/issues/`. See `docs/agents/issue-tracker.md`.
+Local markdown under `.scratch/`; v1 tickets live in `.scratch/accountability-app/issues/`. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
