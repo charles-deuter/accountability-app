@@ -1,8 +1,8 @@
-# Nag — ADHD Reminder App
+# Accountability App — ADHD Reminder App
 
 ## Overview
 
-Nag is an Android reminder app designed for people with ADHD who reflexively dismiss notifications and procrastinate on recurring tasks. Its core differentiator: **reminders cannot be dismissed, only snoozed or completed.** Notifications fire as full-screen intents — taking over the lock screen like an incoming phone call — with sound and vibration that bypass Do Not Disturb.
+Accountability App is an Android reminder app designed for people with ADHD who reflexively dismiss notifications and procrastinate on recurring tasks. Its core differentiator: **reminders cannot be dismissed, only snoozed or completed.** Notifications fire as full-screen intents — taking over the lock screen like an incoming phone call — with sound and vibration that bypass Do Not Disturb.
 
 Snoozed items remain visible in the task list with a badge showing how many times they've been snoozed, providing gentle accountability.
 
@@ -16,7 +16,7 @@ Snoozed items remain visible in the task list with a badge showing how many time
 
 Existing reminder apps fail ADHD users in a specific way: notifications are too easy to dismiss reflexively during hyperfocus. The user swipes away the notification without conscious engagement, and the task is forgotten seconds later. The reminder fired, the user "saw" it, and nothing happened.
 
-Nag solves this by removing the dismiss option entirely and making notifications intrusive enough to break through hyperfocus.
+Accountability App solves this by removing the dismiss option entirely and making notifications intrusive enough to break through hyperfocus.
 
 ## Core Mechanics
 

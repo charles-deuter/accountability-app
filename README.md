@@ -1,4 +1,4 @@
-# Nag
+# Accountability App
 
 An ADHD-focused Android reminder app. Reminders can't be dismissed — only snoozed or completed. Full-screen notifications break through hyperfocus.
 
