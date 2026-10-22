@@ -6,13 +6,19 @@
 
 **Status:** ready-for-agent
 
-Design notes: notification channels cannot be changed by the app after creation on the user's device, so pick the channel ID, importance (alarm/high), sound, and vibration deliberately. Use exact alarms so reminders don't drift.
+Design notes:
+
+- Notification channels cannot be changed by the app after creation on the user's device, so pick the channel ID, importance (alarm/high), sound, and vibration deliberately.
+- **No polling, no background service.** Android's AlarmManager holds the schedule; the app process can be dead between reminders. When the alarm fires, Android starts the app just long enough for a broadcast receiver to read the database and post the notification (receivers get roughly 10 seconds, so do the database read asynchronously within that budget).
+- **One alarm, for the next due time.** Only the soonest fire time across all pending and snoozed tasks has an alarm. When it fires, the receiver posts a notification for every task due at that moment, then schedules the alarm for the next due time. Any change to tasks (save, edit, delete, Done, snooze) recomputes that single alarm. Same-time reminders therefore share one alarm.
+- **Use `setExactAndAllowWhileIdle()`**, which fires on time even in Doze (the phone's deep idle state: screen off, unplugged, stationary). Its known limit, per Google's docs: while the phone is in Doze it "cannot fire alarms more than once per nine minutes, per app". Two reminders 1–8 minutes apart during deep Doze can see the second arrive up to ~9 minutes late, at full intrusiveness. Accepted for v1; ticket 12 measures it on the real phone.
+- **`setAlarmClock()` was considered and rejected for v1.** It is never delayed, but it lights the system-wide alarm icon whenever any alarm is pending (effectively always, with recurring reminders), shows reminder times as the phone's "next alarm" on the lock screen and clock widgets ahead of the user's real wake-up alarm, and can end a Do Not Disturb schedule early via "Alarm can override end time". If ticket 12 shows the Doze delay matters in practice, later options are: switch to `setAlarmClock()` only for a reminder within nine minutes of the previous one, or a "Strict timing (shows alarm icon)" setting.
 
 - [ ] An alarm-importance notification channel is created at app startup, with sound and vibration on
-- [ ] Saving a task schedules an exact alarm for its time; editing reschedules it; deleting cancels it
-- [ ] When the alarm fires, an ongoing (non-swipeable) notification shows the task title and a Done action
+- [ ] Saving, editing, and deleting a task recompute the single next alarm with `setExactAndAllowWhileIdle()`; with no pending tasks, no alarm is set
+- [ ] When the alarm fires, every task due at that moment gets its own ongoing (non-swipeable) notification with the task title and a Done action, and the next alarm is scheduled
 - [ ] Done marks the task completed (sets completedAt), cancels the notification, and the task leaves the Task List
 - [ ] The app requests the notifications permission on Android 13+ before the first reminder is saved
-- [ ] Integration tests cover schedule-on-save, reschedule-on-edit, and cancel-on-delete through the scheduling abstraction
+- [ ] Integration tests through the scheduling abstraction cover: save, edit, and delete each recompute the next alarm; two tasks at the same time produce one alarm and two notifications; firing schedules the following alarm
 - [ ] Unit test covers the Done transition (pending → completed)
-- [ ] Manual smoke on the emulator: a reminder set one minute out fires and Done clears it
+- [ ] Manual smoke on the emulator: a reminder set one minute out fires and Done clears it; repeat with the emulator forced into Doze (`adb shell dumpsys deviceidle force-idle`) and confirm it still fires on time

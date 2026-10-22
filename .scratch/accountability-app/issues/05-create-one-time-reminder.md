@@ -12,5 +12,6 @@ Domain notes: a **Task** has id, title, scheduledTime, templateId (nullable — 
 - [ ] FAB opens Add Task with a required title and a date/time picker; saving with an empty title is blocked with a visible message
 - [ ] Overdue tasks (fire time in the past, not completed) are visually distinct — covered by a test on the overdue rule
 - [ ] Tasks persist across an app process restart
+- [ ] A task that becomes overdue while the Task List is open turns red within a minute: the list re-evaluates on a one-minute tick while the screen is visible, and on return to the foreground. Nothing runs in the background for this
 - [ ] Room integration tests cover insert, query ordering, and the overdue query
 - [ ] ViewModel/unit test covers the title-required validation
