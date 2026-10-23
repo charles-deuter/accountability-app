@@ -13,11 +13,11 @@ fun MainNavigation() {
 
   NavDisplay(
     backStack = backStack,
-    onBack = { backStack.removeLastOrNull() },
+    onBack = { -> backStack.removeLastOrNull() },
     entryProvider =
       entryProvider {
-        entry<TaskList> { TaskListScreen(onAddTask = { backStack.add(AddTask) }) }
-        entry<AddTask> { AddTaskScreen(onDone = { backStack.removeLastOrNull() }) }
+        entry<TaskList> { TaskListScreen(onAddTask = { -> backStack.add(AddTask) }) }
+        entry<AddTask> { AddTaskScreen(onDone = { -> backStack.removeLastOrNull() }) }
       },
   )
 }

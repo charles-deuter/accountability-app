@@ -40,7 +40,7 @@ class TaskRepositoryTest {
 
     val taskList = repository.observeTaskList().first()
 
-    assertEquals(listOf("Call dentist"), taskList.map { it.title })
+    assertEquals(listOf("Call dentist"), taskList.map { task -> task.title })
     assertEquals(Instant.parse("2026-10-22T09:00:00Z"), taskList.single().scheduledTime)
   }
 
@@ -50,7 +50,7 @@ class TaskRepositoryTest {
     repository.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T09:00:00Z"))
     repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T15:00:00Z"))
 
-    val titles = repository.observeTaskList().first().map { it.title }
+    val titles = repository.observeTaskList().first().map { task -> task.title }
 
     assertEquals(listOf("Take meds", "Call dentist", "Pay rent"), titles)
   }
@@ -62,7 +62,7 @@ class TaskRepositoryTest {
 
     repository.complete(dentistId)
 
-    assertEquals(listOf("Pay rent"), repository.observeTaskList().first().map { it.title })
+    assertEquals(listOf("Pay rent"), repository.observeTaskList().first().map { task -> task.title })
   }
 
   @Test
@@ -74,7 +74,7 @@ class TaskRepositoryTest {
     firstLaunch.close()
 
     val secondLaunch = AppDatabase.open(context, fileName)
-    val titles = TaskRepository(secondLaunch.taskDao(), clock).observeTaskList().first().map { it.title }
+    val titles = TaskRepository(secondLaunch.taskDao(), clock).observeTaskList().first().map { task -> task.title }
     secondLaunch.close()
 
     assertEquals(listOf("Call dentist"), titles)

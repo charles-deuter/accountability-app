@@ -43,9 +43,9 @@ class TaskListViewModelTest {
     repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T13:00:00Z"))
     val viewModel = TaskListViewModel(repository, noon)
 
-    val items = viewModel.uiState.first { it.items.size == 2 }.items
+    val items = viewModel.uiState.first { state -> state.items.size == 2 }.items
 
-    assertEquals(mapOf("Take meds" to true, "Call dentist" to false), items.associate { it.title to it.isOverdue })
+    assertEquals(mapOf("Take meds" to true, "Call dentist" to false), items.associate { item -> item.title to item.isOverdue })
   }
 
   @Test
@@ -53,8 +53,8 @@ class TaskListViewModelTest {
     val clock = SettableClock(Instant.parse("2026-10-21T12:00:00Z"))
     repository.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:00:30Z"))
     val viewModel = TaskListViewModel(repository, clock)
-    backgroundScope.launch { viewModel.uiState.collect {} }
-    val before = viewModel.uiState.first { it.items.isNotEmpty() }.items.single()
+    backgroundScope.launch { viewModel.uiState.collect { _ -> } }
+    val before = viewModel.uiState.first { state -> state.items.isNotEmpty() }.items.single()
 
     clock.now = Instant.parse("2026-10-21T12:01:00Z")
     advanceTimeBy(60_000)

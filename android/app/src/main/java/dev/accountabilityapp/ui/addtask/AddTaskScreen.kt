@@ -105,8 +105,8 @@ fun AddTaskScreen(
         modifier = Modifier.fillMaxWidth(),
       )
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = { showDatePicker = true }) { Text(formatDate(state.scheduledTime, zone)) }
-        OutlinedButton(onClick = { showTimePicker = true }) { Text(formatTime(state.scheduledTime, zone)) }
+        OutlinedButton(onClick = { -> showDatePicker = true }) { Text(formatDate(state.scheduledTime, zone)) }
+        OutlinedButton(onClick = { -> showTimePicker = true }) { Text(formatTime(state.scheduledTime, zone)) }
       }
       Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.save)) }
     }
@@ -117,10 +117,10 @@ fun AddTaskScreen(
     val initialDateMillis = scheduled.toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialDateMillis)
     DatePickerDialog(
-      onDismissRequest = { showDatePicker = false },
+      onDismissRequest = { -> showDatePicker = false },
       confirmButton = {
         TextButton(
-          onClick = {
+          onClick = { ->
             datePickerState.selectedDateMillis?.let { millis ->
               val pickedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
               onScheduledTimeChange(combine(pickedDate, scheduled.toLocalTime(), zone))
@@ -131,7 +131,7 @@ fun AddTaskScreen(
           Text(stringResource(R.string.ok))
         }
       },
-      dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) } },
+      dismissButton = { TextButton(onClick = { -> showDatePicker = false }) { Text(stringResource(R.string.cancel)) } },
     ) {
       DatePicker(state = datePickerState)
     }
@@ -140,10 +140,10 @@ fun AddTaskScreen(
   if (showTimePicker) {
     val timePickerState = rememberTimePickerState(initialHour = scheduled.hour, initialMinute = scheduled.minute)
     AlertDialog(
-      onDismissRequest = { showTimePicker = false },
+      onDismissRequest = { -> showTimePicker = false },
       confirmButton = {
         TextButton(
-          onClick = {
+          onClick = { ->
             val pickedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
             onScheduledTimeChange(combine(scheduled.toLocalDate(), pickedTime, zone))
             showTimePicker = false
@@ -152,7 +152,7 @@ fun AddTaskScreen(
           Text(stringResource(R.string.ok))
         }
       },
-      dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text(stringResource(R.string.cancel)) } },
+      dismissButton = { TextButton(onClick = { -> showTimePicker = false }) { Text(stringResource(R.string.cancel)) } },
       text = { TimePicker(state = timePickerState) },
     )
   }

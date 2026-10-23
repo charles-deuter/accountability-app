@@ -57,7 +57,7 @@ fun TaskListScreen(state: TaskListUiState, onAddTask: () -> Unit, modifier: Modi
       }
     } else {
       LazyColumn(Modifier.fillMaxSize().padding(innerPadding)) {
-        items(state.items, key = { it.id }) { item ->
+        items(state.items, key = { item -> item.id }) { item ->
           TaskRow(item)
           HorizontalDivider()
         }
@@ -93,7 +93,7 @@ private fun TaskListScreenPreview() {
             TaskListItem(2, "Call dentist", Instant.parse("2026-10-22T15:00:00Z"), isOverdue = false),
           )
         ),
-      onAddTask = {},
+      onAddTask = { -> },
     )
   }
 }

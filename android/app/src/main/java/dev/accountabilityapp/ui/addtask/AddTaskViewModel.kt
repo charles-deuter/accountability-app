@@ -25,22 +25,22 @@ class AddTaskViewModel(private val repository: TaskRepository, clock: Clock) : V
   val uiState: StateFlow<AddTaskUiState> = _uiState.asStateFlow()
 
   fun onTitleChange(title: String) {
-    _uiState.update { it.copy(title = title, showTitleRequired = false) }
+    _uiState.update { state -> state.copy(title = title, showTitleRequired = false) }
   }
 
   fun onScheduledTimeChange(scheduledTime: Instant) {
-    _uiState.update { it.copy(scheduledTime = scheduledTime) }
+    _uiState.update { state -> state.copy(scheduledTime = scheduledTime) }
   }
 
   fun save() {
     val form = _uiState.value
     if (form.title.isBlank()) {
-      _uiState.update { it.copy(showTitleRequired = true) }
+      _uiState.update { state -> state.copy(showTitleRequired = true) }
       return
     }
     viewModelScope.launch {
       repository.add(title = form.title.trim(), scheduledTime = form.scheduledTime)
-      _uiState.update { it.copy(isSaved = true) }
+      _uiState.update { state -> state.copy(isSaved = true) }
     }
   }
 }

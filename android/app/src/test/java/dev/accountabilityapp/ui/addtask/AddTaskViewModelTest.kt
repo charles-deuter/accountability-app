@@ -42,7 +42,7 @@ class AddTaskViewModelTest {
     viewModel.save()
 
     assertTrue(viewModel.uiState.value.showTitleRequired)
-    assertEquals(emptyList<String>(), repository.observeTaskList().first().map { it.title })
+    assertEquals(emptyList<String>(), repository.observeTaskList().first().map { task -> task.title })
   }
 
   @Test
@@ -53,7 +53,7 @@ class AddTaskViewModelTest {
     viewModel.onScheduledTimeChange(Instant.parse("2026-10-23T15:30:00Z"))
     viewModel.save()
 
-    viewModel.uiState.first { it.isSaved }
+    viewModel.uiState.first { state -> state.isSaved }
     val saved = repository.observeTaskList().first().single()
     assertEquals("Call dentist", saved.title)
     assertEquals(Instant.parse("2026-10-23T15:30:00Z"), saved.scheduledTime)
