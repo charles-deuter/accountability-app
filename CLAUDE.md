@@ -23,7 +23,11 @@ Default five-role vocabulary; `ready-for-human` marks tickets that need Charlie'
   - **Actions and transformations**: a verb, e.g. `formatDateTime(instant)`, `complete(taskId)`.
   - Avoid `get…` (Java getter style), `select…` (Redux vocabulary), and `compute…` (implies expensive work) for selectors, and never name a function with a bare noun.
 - **Lambdas read as functions:**
-  - **Name every lambda parameter; never use the implicit `it`.** Write `tasks.map { task -> task.title }`, not `tasks.map { it.title }`. Declare an unused parameter as `_` (`collect { _ -> }`).
+  - **Name every lambda parameter; never use the implicit `it`.** Write `tasks.map({ task -> task.title })`, not `tasks.map { it.title }`. Declare an unused parameter as `_` (`collect({ _ -> })`).
+  - **Lambdas go inside the call's parentheses, so a call reads as a call** and not as a declaration or an `if`: `tasks.map({ task -> task.title })`, `remember({ -> mutableStateOf(false) })`, `viewModelScope.launch(block = { -> … })`.
+    - Pass the lambda positionally when it is the call's only argument. Otherwise name it: `combine(flowA, flowB, transform = { a, b -> … })`. `launch`, `runTest`, `LaunchedEffect` and `viewModel` take other parameters first, so a positional lambda there won't compile.
+    - A lambda with no parameters gets an explicit empty arrow: `{ -> … }`.
+    - Android Studio's "Lambda argument should be moved out of parentheses" hint is expected; ignore it.
   - **Event callbacks use a named argument and an explicit empty arrow:** `onAddTask = { -> backStack.add(AddTask) }`, `onClick = { -> showDatePicker = true }`, and `{ -> }` for a no-op. Pass a function directly when it already exists (`onClick = onSave`).
-  - **Trailing lambdas are only for content blocks:** UI slots and builders such as `Column { … }`, `entry<TaskList> { … }`, `confirmButton = { … }`. No arrow there.
+  - **The one exception is UI content blocks and builders, which stay trailing with no arrow:** `Column { … }`, `Scaffold(…) { innerPadding -> … }`, `entry<TaskList> { … }`, `setContent { … }`, slots like `confirmButton = { … }`, and Gradle DSL blocks (`android { … }`).
   - When a callback grows past one line, give it a name with an explicit type: `val openAddTask: () -> Unit = { -> backStack.add(AddTask) }`.
