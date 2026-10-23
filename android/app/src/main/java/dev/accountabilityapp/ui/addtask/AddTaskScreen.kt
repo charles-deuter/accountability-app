@@ -48,10 +48,10 @@ import java.time.ZoneOffset
 @Composable
 fun AddTaskScreen(onDone: () -> Unit, modifier: Modifier = Modifier) {
   val container = appContainerFrom(LocalContext.current)
-  val viewModel: AddTaskViewModel = viewModel { AddTaskViewModel(container.taskRepository, container.clock) }
+  val viewModel: AddTaskViewModel = viewModel(initializer = { -> AddTaskViewModel(container.taskRepository, container.clock) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-  LaunchedEffect(state.isSaved) { if (state.isSaved) onDone() }
+  LaunchedEffect(state.isSaved, block = { -> if (state.isSaved) onDone() })
 
   AddTaskScreen(
     state = state,
@@ -74,8 +74,8 @@ fun AddTaskScreen(
   modifier: Modifier = Modifier,
   zone: ZoneId = ZoneId.systemDefault(),
 ) {
-  var showDatePicker by remember { mutableStateOf(false) }
-  var showTimePicker by remember { mutableStateOf(false) }
+  var showDatePicker by remember({ -> mutableStateOf(false) })
+  var showTimePicker by remember({ -> mutableStateOf(false) })
   val scheduled = state.scheduledTime.atZone(zone)
 
   Scaffold(
@@ -121,10 +121,10 @@ fun AddTaskScreen(
       confirmButton = {
         TextButton(
           onClick = { ->
-            datePickerState.selectedDateMillis?.let { millis ->
+            datePickerState.selectedDateMillis?.let({ millis ->
               val pickedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
               onScheduledTimeChange(combine(pickedDate, scheduled.toLocalTime(), zone))
-            }
+            })
             showDatePicker = false
           }
         ) {

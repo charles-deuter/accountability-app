@@ -28,16 +28,20 @@ class TaskListViewModel(repository: TaskRepository, clock: Clock, tickInterval: 
    * screen is visible), and restarts with a fresh time when the screen comes back, so nothing runs in the background.
    */
   val uiState: StateFlow<TaskListUiState> =
-    combine(repository.observeTaskList(), ticks(clock, tickInterval)) { tasks, now ->
-        TaskListUiState(tasks.map { task -> TaskListItem(task.id, task.title, fireTimeOf(task), isOverdue(task, now)) })
-      }
+    combine(
+        repository.observeTaskList(),
+        ticks(clock, tickInterval),
+        transform = { tasks, now ->
+          TaskListUiState(tasks.map({ task -> TaskListItem(task.id, task.title, fireTimeOf(task), isOverdue(task, now)) }))
+        },
+      )
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TaskListUiState())
 }
 
 /** Emits the current time immediately, then once per [interval]. */
-private fun ticks(clock: Clock, interval: Duration): Flow<Instant> = flow {
+private fun ticks(clock: Clock, interval: Duration): Flow<Instant> = flow({ ->
   while (true) {
     emit(clock.instant())
     delay(interval)
   }
-}
+})

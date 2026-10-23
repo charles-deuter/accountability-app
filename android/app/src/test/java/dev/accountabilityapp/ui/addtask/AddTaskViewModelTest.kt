@@ -35,27 +35,27 @@ class AddTaskViewModelTest {
   }
 
   @Test
-  fun savingABlankTitle_showsTitleRequired_andSavesNothing() = runTest {
+  fun savingABlankTitle_showsTitleRequired_andSavesNothing() = runTest(testBody = { ->
     val viewModel = AddTaskViewModel(repository, clock)
 
     viewModel.onTitleChange("   ")
     viewModel.save()
 
     assertTrue(viewModel.uiState.value.showTitleRequired)
-    assertEquals(emptyList<String>(), repository.observeTaskList().first().map { task -> task.title })
-  }
+    assertEquals(emptyList<String>(), repository.observeTaskList().first().map({ task -> task.title }))
+  })
 
   @Test
-  fun savingATitleAndTime_addsTheTask_andReportsSaved() = runTest {
+  fun savingATitleAndTime_addsTheTask_andReportsSaved() = runTest(testBody = { ->
     val viewModel = AddTaskViewModel(repository, clock)
 
     viewModel.onTitleChange("Call dentist")
     viewModel.onScheduledTimeChange(Instant.parse("2026-10-23T15:30:00Z"))
     viewModel.save()
 
-    viewModel.uiState.first { state -> state.isSaved }
+    viewModel.uiState.first({ state -> state.isSaved })
     val saved = repository.observeTaskList().first().single()
     assertEquals("Call dentist", saved.title)
     assertEquals(Instant.parse("2026-10-23T15:30:00Z"), saved.scheduledTime)
-  }
+  })
 }

@@ -35,38 +35,38 @@ class TaskRepositoryTest {
   }
 
   @Test
-  fun addedTask_appearsInTheTaskList() = runTest {
+  fun addedTask_appearsInTheTaskList() = runTest(testBody = { ->
     repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
 
     val taskList = repository.observeTaskList().first()
 
-    assertEquals(listOf("Call dentist"), taskList.map { task -> task.title })
+    assertEquals(listOf("Call dentist"), taskList.map({ task -> task.title }))
     assertEquals(Instant.parse("2026-10-22T09:00:00Z"), taskList.single().scheduledTime)
-  }
+  })
 
   @Test
-  fun taskList_isOrderedByFireTime_notByWhenTasksWereAdded() = runTest {
+  fun taskList_isOrderedByFireTime_notByWhenTasksWereAdded() = runTest(testBody = { ->
     repository.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
     repository.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T09:00:00Z"))
     repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T15:00:00Z"))
 
-    val titles = repository.observeTaskList().first().map { task -> task.title }
+    val titles = repository.observeTaskList().first().map({ task -> task.title })
 
     assertEquals(listOf("Take meds", "Call dentist", "Pay rent"), titles)
-  }
+  })
 
   @Test
-  fun completedTask_leavesTheTaskList() = runTest {
+  fun completedTask_leavesTheTaskList() = runTest(testBody = { ->
     val dentistId = repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
     repository.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
 
     repository.complete(dentistId)
 
-    assertEquals(listOf("Pay rent"), repository.observeTaskList().first().map { task -> task.title })
-  }
+    assertEquals(listOf("Pay rent"), repository.observeTaskList().first().map({ task -> task.title }))
+  })
 
   @Test
-  fun tasks_surviveClosingAndReopeningTheAppDatabase() = runTest {
+  fun tasks_surviveClosingAndReopeningTheAppDatabase() = runTest(testBody = { ->
     val fileName = "restart-test.db"
     context.deleteDatabase(fileName)
     val firstLaunch = AppDatabase.open(context, fileName)
@@ -74,9 +74,9 @@ class TaskRepositoryTest {
     firstLaunch.close()
 
     val secondLaunch = AppDatabase.open(context, fileName)
-    val titles = TaskRepository(secondLaunch.taskDao(), clock).observeTaskList().first().map { task -> task.title }
+    val titles = TaskRepository(secondLaunch.taskDao(), clock).observeTaskList().first().map({ task -> task.title })
     secondLaunch.close()
 
     assertEquals(listOf("Call dentist"), titles)
-  }
+  })
 }

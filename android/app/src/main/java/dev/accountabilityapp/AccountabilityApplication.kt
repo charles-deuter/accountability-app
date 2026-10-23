@@ -7,7 +7,7 @@ import dev.accountabilityapp.data.TaskRepository
 import java.time.Clock
 
 class AccountabilityApplication : Application() {
-  val container: AppContainer by lazy { AppContainer(this) }
+  val container: AppContainer by lazy({ -> AppContainer(this) })
 }
 
 /** App-wide singletons, built by hand: the app is small enough not to need a DI framework. */

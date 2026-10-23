@@ -40,7 +40,7 @@ android {
       // Robolectric needs merged resources to render Compose and read strings on the JVM.
       unitTests.isIncludeAndroidResources = true
       // Robolectric's FileDescriptor interceptor reads JDK internals that Java 21 no longer exports.
-      unitTests.all { it.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED") }
+      unitTests.all { test -> test.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED") }
     }
 
     packaging {
