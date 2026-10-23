@@ -39,6 +39,8 @@ Run these from `android/`:
 | JVM tests (Robolectric, no emulator needed) | `./gradlew :app:testDebugUnitTest` |
 | Device tests (needs a running emulator or phone) | `./gradlew :app:connectedDebugAndroidTest` |
 
+In Android Studio, open the `android/` folder. The run-configuration dropdown has **JVM tests (Robolectric)** and **Device tests (emulator)**, shared from `android/.run/`. They run the same Gradle tasks as the table above and show results in Studio's test runner. To run a single test, use the green arrow beside it in the editor.
+
 Most tests run on the JVM through Robolectric, so the red → green loop needs no emulator. Device tests cover what only a real Android runtime can show.
 
 ### Run on the emulator
