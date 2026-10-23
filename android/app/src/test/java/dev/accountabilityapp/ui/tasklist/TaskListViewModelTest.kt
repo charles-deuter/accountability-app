@@ -11,6 +11,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
@@ -22,6 +23,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
+// advanceTimeBy and runCurrent drive the one-minute tick on virtual time; both are marked experimental.
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class TaskListViewModelTest {
 
@@ -53,7 +56,7 @@ class TaskListViewModelTest {
     val clock = SettableClock(Instant.parse("2026-10-21T12:00:00Z"))
     repository.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:00:30Z"))
     val viewModel = TaskListViewModel(repository, clock)
-    backgroundScope.launch { viewModel.uiState.collect { _ -> } }
+    backgroundScope.launch { viewModel.uiState.collect { latestState -> } }
     val before = viewModel.uiState.first { state -> state.items.isNotEmpty() }.items.single()
 
     clock.now = Instant.parse("2026-10-21T12:01:00Z")

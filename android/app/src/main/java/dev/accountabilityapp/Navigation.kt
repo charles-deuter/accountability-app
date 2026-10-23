@@ -16,8 +16,8 @@ fun MainNavigation() {
     onBack = { -> backStack.removeLastOrNull() },
     entryProvider =
       entryProvider {
-        entry<TaskList> { TaskListScreen(onAddTask = { -> backStack.add(AddTask) }) }
-        entry<AddTask> { AddTaskScreen(onDone = { -> backStack.removeLastOrNull() }) }
+        entry<TaskList> { taskListKey -> TaskListScreen(onAddTask = { -> backStack.add(AddTask) }) }
+        entry<AddTask> { addTaskKey -> AddTaskScreen(onDone = { -> backStack.removeLastOrNull() }) }
       },
   )
 }
