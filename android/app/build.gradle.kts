@@ -48,6 +48,12 @@ android {
     }
 }
 
+// Pin every resolved dependency, including transitives, in app/gradle.lockfile.
+// After changing a version in libs.versions.toml, refresh with the command in the README.
+dependencyLocking {
+    lockAllConfigurations()
+}
+
 kotlin {
     // 21, not 17: Robolectric needs a Java 21 runtime to emulate SDK 35+.
     jvmToolchain(21)

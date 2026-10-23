@@ -43,6 +43,22 @@ In Android Studio, open the `android/` folder. The run-configuration dropdown ha
 
 Most tests run on the JVM through Robolectric, so the red → green loop needs no emulator. Device tests cover what only a real Android runtime can show.
 
+### Dependencies and lock files
+
+Versions live in `android/gradle/libs.versions.toml`. Gradle dependency locking pins every resolved dependency, transitives included, in committed lock files:
+
+- `android/app/gradle.lockfile`: the app's libraries
+- `android/buildscript-gradle.lockfile`: Gradle plugins (AGP, Kotlin, KSP)
+- `android/settings-gradle.lockfile`: settings plugins
+
+A build fails if anything resolves to a version other than the locked one. After you change a version or add a dependency, rewrite the locks from `android/` and commit them with the change:
+
+```bash
+./gradlew buildEnvironment :app:dependencies :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest --write-locks --no-configuration-cache
+```
+
+The Gradle wrapper (`gradlew`, `gradle/wrapper/gradle-wrapper.jar`) is committed on purpose: it pins Gradle 9.1.0 and verifies the download against the checksum in `gradle-wrapper.properties`. To upgrade, run `./gradlew wrapper --gradle-version <version> --gradle-distribution-sha256-sum <sha>` and check that the new jar's SHA-256 matches `https://services.gradle.org/distributions/gradle-<version>-wrapper.jar.sha256`.
+
 ### Run on the emulator
 
 ```bash
