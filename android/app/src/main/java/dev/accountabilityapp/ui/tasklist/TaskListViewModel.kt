@@ -3,7 +3,7 @@ package dev.accountabilityapp.ui.tasklist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.accountabilityapp.data.TaskRepository
-import dev.accountabilityapp.data.fireTime
+import dev.accountabilityapp.data.fireTimeOf
 import dev.accountabilityapp.data.isOverdue
 import java.time.Clock
 import java.time.Instant
@@ -29,7 +29,7 @@ class TaskListViewModel(repository: TaskRepository, clock: Clock, tickInterval: 
    */
   val uiState: StateFlow<TaskListUiState> =
     combine(repository.observeTaskList(), ticks(clock, tickInterval)) { tasks, now ->
-        TaskListUiState(tasks.map { task -> TaskListItem(task.id, task.title, fireTime(task), isOverdue(task, now)) })
+        TaskListUiState(tasks.map { task -> TaskListItem(task.id, task.title, fireTimeOf(task), isOverdue(task, now)) })
       }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TaskListUiState())
 }
