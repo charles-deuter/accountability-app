@@ -11,3 +11,8 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 
 **Wrong:** The handoff said to record the JDK workaround and build/test commands in `CONTEXT.md`. The `domain-modeling` skill defines `CONTEXT.md` as a domain glossary with no implementation details.
 **Rule:** `CONTEXT.md` holds domain terms only. Build, toolchain, and command facts go in the README or the resolved ticket's Comments.
+
+## 2026-10-22: new tickets added to a feature PR
+
+**Wrong:** Added tickets 23 and 24 (CI) to ticket 03's PR because that PR already carried ticket housekeeping. Charlie wanted them in a separate PR.
+**Rule:** A feature PR only touches its own ticket (resolving it, plus follow-up items it directly creates). New or reshaped tickets go in their own PR off `main`, in their own commit.
