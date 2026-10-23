@@ -20,6 +20,7 @@ Default five-role vocabulary; `ready-for-human` marks tickets that need Charlie'
   - **Selectors** (return a value derived from their argument, no side effects): `<noun>Of(subject)`, e.g. `fireTimeOf(task)`. Reads well as a reference too: `tasks.sortedBy(::fireTimeOf)`.
   - **Lookups through another object**: `<noun>From(source)`, e.g. `appContainerFrom(context)`.
   - **Predicates**: `is…` / `has…` / `can…`, e.g. `isOverdue(task, now)`.
+  - **Screens come in pairs with different names, never overloads:** `<Name>Route` is the stateful one (gets the ViewModel, collects state, and is what `Navigation.kt` calls). `<Name>Screen` is the stateless one (takes state and callbacks; previews and tests use it). Example: `TaskListRoute` / `TaskListScreen`.
   - **Actions and transformations**: a verb, e.g. `formatDateTime(instant)`, `complete(taskId)`.
   - Avoid `get…` (Java getter style), `select…` (Redux vocabulary), and `compute…` (implies expensive work) for selectors, and never name a function with a bare noun.
 - **Lambdas read as functions:**
