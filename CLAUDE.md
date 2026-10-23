@@ -14,4 +14,5 @@ Default five-role vocabulary; `ready-for-human` marks tickets that need Charlie'
 
 ## Coding style
 
-- **Explicit `this.` in extension functions and properties.** Inside `fun Foo.bar()` or `val Foo.baz`, reference the receiver's members as `this.member`, not bare `member`. In Kotlin a bare call could equally be a top-level function, an imported extension, a local function, or a function-typed variable; `this.` shows at a glance that it's the receiver. Not required in ordinary class members or DSL/builder lambdas (Compose modifiers, Gradle blocks), where the bare form is the idiom.
+- **Plain functions, not extensions.** Write `fun isOverdue(task: Task, now: Instant)`, not `fun Task.isOverdue(now: Instant)`. An extension still has to be imported, so it adds nothing but dot syntax, and it hides where the function lives. If a library API forces an extension (for example a DSL receiver), reference receiver members with explicit `this.`.
+- **Named intermediates over packed expressions.** When a line does more than one thing (a cast plus a property read, a compound condition), give each step a named `val` and use a block body.
