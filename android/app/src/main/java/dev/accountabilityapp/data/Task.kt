@@ -25,9 +25,12 @@ enum class TaskStatus {
   COMPLETED,
 }
 
-/** The moment this Task's Reminder goes off. Snoozing moves it (ticket 08). */
-val Task.fireTime: Instant
-  get() = this.scheduledTime
+/** The moment a Task's Reminder goes off. Snoozing moves it (ticket 08). */
+fun fireTime(task: Task): Instant = task.scheduledTime
 
 /** Overdue: the Fire time has passed and the Task isn't Completed. */
-fun Task.isOverdue(now: Instant): Boolean = this.status != TaskStatus.COMPLETED && this.fireTime.isBefore(now)
+fun isOverdue(task: Task, now: Instant): Boolean {
+  val isCompleted = task.status == TaskStatus.COMPLETED
+  val fireTimeHasPassed = fireTime(task).isBefore(now)
+  return !isCompleted && fireTimeHasPassed
+}

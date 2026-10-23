@@ -28,14 +28,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.accountabilityapp.R
-import dev.accountabilityapp.appContainer
+import dev.accountabilityapp.appContainerFrom
 import dev.accountabilityapp.theme.AccountabilityAppTheme
 import dev.accountabilityapp.ui.formatDateTime
 import java.time.Instant
 
 @Composable
 fun TaskListScreen(onAddTask: () -> Unit, modifier: Modifier = Modifier) {
-  val container = LocalContext.current.appContainer
+  val container = appContainerFrom(LocalContext.current)
   val viewModel: TaskListViewModel = viewModel { TaskListViewModel(container.taskRepository, container.clock) }
   val state by viewModel.uiState.collectAsStateWithLifecycle()
   TaskListScreen(state = state, onAddTask = onAddTask, modifier = modifier)
@@ -70,7 +70,7 @@ fun TaskListScreen(state: TaskListUiState, onAddTask: () -> Unit, modifier: Modi
 private fun TaskRow(item: TaskListItem) {
   val overdueColor = MaterialTheme.colorScheme.error
   val accentColor = if (item.isOverdue) overdueColor else MaterialTheme.colorScheme.onSurfaceVariant
-  val fireTimeLabel = item.fireTime.formatDateTime()
+  val fireTimeLabel = formatDateTime(item.fireTime)
   val overdueLabel = stringResource(R.string.overdue)
   val supportingText = if (item.isOverdue) "$overdueLabel · $fireTimeLabel" else fireTimeLabel
   val headlineColor = if (item.isOverdue) overdueColor else MaterialTheme.colorScheme.onSurface

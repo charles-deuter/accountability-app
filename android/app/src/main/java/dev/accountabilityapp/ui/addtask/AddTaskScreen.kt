@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.accountabilityapp.R
-import dev.accountabilityapp.appContainer
+import dev.accountabilityapp.appContainerFrom
 import dev.accountabilityapp.ui.formatDate
 import dev.accountabilityapp.ui.formatTime
 import java.time.Instant
@@ -47,7 +47,7 @@ import java.time.ZoneOffset
 
 @Composable
 fun AddTaskScreen(onDone: () -> Unit, modifier: Modifier = Modifier) {
-  val container = LocalContext.current.appContainer
+  val container = appContainerFrom(LocalContext.current)
   val viewModel: AddTaskViewModel = viewModel { AddTaskViewModel(container.taskRepository, container.clock) }
   val state by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -105,8 +105,8 @@ fun AddTaskScreen(
         modifier = Modifier.fillMaxWidth(),
       )
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = { showDatePicker = true }) { Text(state.scheduledTime.formatDate(zone)) }
-        OutlinedButton(onClick = { showTimePicker = true }) { Text(state.scheduledTime.formatTime(zone)) }
+        OutlinedButton(onClick = { showDatePicker = true }) { Text(formatDate(state.scheduledTime, zone)) }
+        OutlinedButton(onClick = { showTimePicker = true }) { Text(formatTime(state.scheduledTime, zone)) }
       }
       Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.save)) }
     }

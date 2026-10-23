@@ -29,7 +29,7 @@ class TaskListViewModel(repository: TaskRepository, clock: Clock, tickInterval: 
    */
   val uiState: StateFlow<TaskListUiState> =
     combine(repository.observeTaskList(), ticks(clock, tickInterval)) { tasks, now ->
-        TaskListUiState(tasks.map { TaskListItem(it.id, it.title, it.fireTime, it.isOverdue(now)) })
+        TaskListUiState(tasks.map { task -> TaskListItem(task.id, task.title, fireTime(task), isOverdue(task, now)) })
       }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TaskListUiState())
 }
