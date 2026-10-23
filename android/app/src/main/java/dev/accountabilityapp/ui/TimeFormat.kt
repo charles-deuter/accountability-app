@@ -9,8 +9,8 @@ private val dateTimeFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyl
 private val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
 private val timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
 
-fun Instant.formatDateTime(zone: ZoneId = ZoneId.systemDefault()): String = dateTimeFormatter.format(atZone(zone))
+fun Instant.formatDateTime(zone: ZoneId = ZoneId.systemDefault()): String = dateTimeFormatter.format(this.atZone(zone))
 
-fun Instant.formatDate(zone: ZoneId = ZoneId.systemDefault()): String = dateFormatter.format(atZone(zone))
+fun Instant.formatDate(zone: ZoneId = ZoneId.systemDefault()): String = dateFormatter.format(this.atZone(zone))
 
-fun Instant.formatTime(zone: ZoneId = ZoneId.systemDefault()): String = timeFormatter.format(atZone(zone))
+fun Instant.formatTime(zone: ZoneId = ZoneId.systemDefault()): String = timeFormatter.format(this.atZone(zone))

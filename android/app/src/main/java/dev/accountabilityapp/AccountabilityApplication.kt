@@ -18,4 +18,4 @@ class AppContainer(context: Context) {
 }
 
 val Context.appContainer: AppContainer
-  get() = (applicationContext as AccountabilityApplication).container
+  get() = (this.applicationContext as AccountabilityApplication).container
