@@ -22,3 +22,8 @@ Default five-role vocabulary; `ready-for-human` marks tickets that need Charlie'
   - **Predicates**: `is…` / `has…` / `can…`, e.g. `isOverdue(task, now)`.
   - **Actions and transformations**: a verb, e.g. `formatDateTime(instant)`, `complete(taskId)`.
   - Avoid `get…` (Java getter style), `select…` (Redux vocabulary), and `compute…` (implies expensive work) for selectors, and never name a function with a bare noun.
+- **Lambdas read as functions:**
+  - **Name every lambda parameter; never use the implicit `it`.** Write `tasks.map { task -> task.title }`, not `tasks.map { it.title }`. Declare an unused parameter as `_` (`collect { _ -> }`).
+  - **Event callbacks use a named argument and an explicit empty arrow:** `onAddTask = { -> backStack.add(AddTask) }`, `onClick = { -> showDatePicker = true }`, and `{ -> }` for a no-op. Pass a function directly when it already exists (`onClick = onSave`).
+  - **Trailing lambdas are only for content blocks:** UI slots and builders such as `Column { … }`, `entry<TaskList> { … }`, `confirmButton = { … }`. No arrow there.
+  - When a callback grows past one line, give it a name with an explicit type: `val openAddTask: () -> Unit = { -> backStack.add(AddTask) }`.
