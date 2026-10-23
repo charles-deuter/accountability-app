@@ -56,7 +56,7 @@ class TaskListViewModelTest {
     val clock = SettableClock(Instant.parse("2026-10-21T12:00:00Z"))
     repository.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:00:30Z"))
     val viewModel = TaskListViewModel(repository, clock)
-    backgroundScope.launch { viewModel.uiState.collect { latestState -> } }
+    backgroundScope.launch { viewModel.uiState.collect { _ -> } }
     val before = viewModel.uiState.first { state -> state.items.isNotEmpty() }.items.single()
 
     clock.now = Instant.parse("2026-10-21T12:01:00Z")

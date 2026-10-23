@@ -23,7 +23,7 @@ Default five-role vocabulary; `ready-for-human` marks tickets that need Charlie'
   - **Actions and transformations**: a verb, e.g. `formatDateTime(instant)`, `complete(taskId)`.
   - Avoid `get…` (Java getter style), `select…` (Redux vocabulary), and `compute…` (implies expensive work) for selectors, and never name a function with a bare noun.
 - **Lambdas read as functions:**
-  - **Name every lambda parameter, used or not: no implicit `it`, no `_`.** Write `tasks.map { task -> task.title }`, not `tasks.map { it.title }`. An unused parameter still gets a real name (`collect { latestState -> }`). This includes content blocks that receive a value: Navigation 3 passes the key to `entry`, so write `entry<TaskList> { taskListKey -> … }`. (The compiler doesn't warn about unused named lambda parameters.)
+  - **Name every lambda parameter; never use the implicit `it`.** Write `tasks.map { task -> task.title }`, not `tasks.map { it.title }`. Declare an unused parameter as `_` (`collect { _ -> }`).
   - **Event callbacks use a named argument and an explicit empty arrow:** `onAddTask = { -> backStack.add(AddTask) }`, `onClick = { -> showDatePicker = true }`, and `{ -> }` for a no-op. Pass a function directly when it already exists (`onClick = onSave`).
-  - **Trailing lambdas are only for content blocks:** UI slots and builders such as `Column { … }`, `entry<TaskList> { taskListKey -> … }`, `confirmButton = { … }`. A content block with no parameters gets no arrow. Check the library signature: a block that looks parameterless may receive an implicit value.
+  - **Trailing lambdas are only for content blocks:** UI slots and builders such as `Column { … }`, `entry<TaskList> { … }`, `confirmButton = { … }`. No arrow there.
   - When a callback grows past one line, give it a name with an explicit type: `val openAddTask: () -> Unit = { -> backStack.add(AddTask) }`.
