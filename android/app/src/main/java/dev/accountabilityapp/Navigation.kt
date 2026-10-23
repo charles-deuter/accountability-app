@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import dev.accountabilityapp.ui.addtask.AddTaskScreen
-import dev.accountabilityapp.ui.tasklist.TaskListScreen
+import dev.accountabilityapp.ui.addtask.AddTaskRoute
+import dev.accountabilityapp.ui.tasklist.TaskListRoute
 
 @Composable
 fun MainNavigation() {
@@ -16,8 +16,8 @@ fun MainNavigation() {
     onBack = { -> backStack.removeLastOrNull() },
     entryProvider =
       entryProvider {
-        entry<TaskList> { TaskListScreen(onAddTask = { -> backStack.add(AddTask) }) }
-        entry<AddTask> { AddTaskScreen(onDone = { -> backStack.removeLastOrNull() }) }
+        entry<TaskList> { TaskListRoute(onAddTask = { -> backStack.add(AddTask) }) }
+        entry<AddTask> { AddTaskRoute(onDone = { -> backStack.removeLastOrNull() }) }
       },
   )
 }

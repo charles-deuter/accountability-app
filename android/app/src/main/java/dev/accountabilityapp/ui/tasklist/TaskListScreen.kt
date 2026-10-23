@@ -34,7 +34,7 @@ import dev.accountabilityapp.ui.formatDateTime
 import java.time.Instant
 
 @Composable
-fun TaskListScreen(onAddTask: () -> Unit, modifier: Modifier = Modifier) {
+fun TaskListRoute(onAddTask: () -> Unit, modifier: Modifier = Modifier) {
   val container = appContainerFrom(LocalContext.current)
   val viewModel: TaskListViewModel = viewModel(initializer = { -> TaskListViewModel(container.taskRepository, container.clock) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()

@@ -46,7 +46,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 
 @Composable
-fun AddTaskScreen(onDone: () -> Unit, modifier: Modifier = Modifier) {
+fun AddTaskRoute(onDone: () -> Unit, modifier: Modifier = Modifier) {
   val container = appContainerFrom(LocalContext.current)
   val viewModel: AddTaskViewModel = viewModel(initializer = { -> AddTaskViewModel(container.taskRepository, container.clock) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
