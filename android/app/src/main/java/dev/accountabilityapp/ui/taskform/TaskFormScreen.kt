@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
@@ -46,9 +47,9 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 
 @Composable
-fun TaskFormRoute(onDone: () -> Unit, modifier: Modifier = Modifier) {
+fun TaskFormRoute(taskId: Long?, onDone: () -> Unit, modifier: Modifier = Modifier) {
   val container = appContainerFrom(LocalContext.current)
-  val viewModel: TaskFormViewModel = viewModel(initializer = { -> TaskFormViewModel(container.taskRepository, container.clock) })
+  val viewModel: TaskFormViewModel = viewModel(initializer = { -> TaskFormViewModel(container.taskRepository, container.clock, taskId) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
 
   LaunchedEffect(state.isFinished, block = { -> if (state.isFinished) onDone() })
@@ -58,6 +59,7 @@ fun TaskFormRoute(onDone: () -> Unit, modifier: Modifier = Modifier) {
     onTitleChange = viewModel::onTitleChange,
     onScheduledTimeChange = viewModel::onScheduledTimeChange,
     onSave = viewModel::save,
+    onDelete = viewModel::delete,
     onBack = onDone,
     modifier = modifier,
   )
@@ -70,27 +72,39 @@ fun TaskFormScreen(
   onTitleChange: (String) -> Unit,
   onScheduledTimeChange: (Instant) -> Unit,
   onSave: () -> Unit,
+  onDelete: () -> Unit,
   onBack: () -> Unit,
   modifier: Modifier = Modifier,
   zone: ZoneId = ZoneId.systemDefault(),
 ) {
   var showDatePicker by remember({ -> mutableStateOf(false) })
   var showTimePicker by remember({ -> mutableStateOf(false) })
+  var showDeleteConfirmation by remember({ -> mutableStateOf(false) })
+  val screenTitle = if (state.isEditing) R.string.edit_task_title else R.string.add_task_title
   val scheduled = state.scheduledTime.atZone(zone)
 
   Scaffold(
     modifier = modifier,
     topBar = {
       TopAppBar(
-        title = { Text(stringResource(R.string.add_task_title)) },
+        title = { Text(stringResource(screenTitle)) },
         navigationIcon = {
           IconButton(onClick = onBack) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.navigate_back))
           }
         },
+        actions = {
+          if (state.isEditing) {
+            IconButton(onClick = { -> showDeleteConfirmation = true }) {
+              Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete))
+            }
+          }
+        },
       )
     }
   ) { innerPadding ->
+    // While an existing Task loads, show nothing rather than a blank form that then jumps.
+    if (state.isLoading) return@Scaffold
     Column(
       Modifier.padding(innerPadding).padding(16.dp).fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -135,6 +149,19 @@ fun TaskFormScreen(
     ) {
       DatePicker(state = datePickerState)
     }
+  }
+
+  if (showDeleteConfirmation) {
+    val confirmDelete: () -> Unit = { ->
+      showDeleteConfirmation = false
+      onDelete()
+    }
+    AlertDialog(
+      onDismissRequest = { -> showDeleteConfirmation = false },
+      title = { Text(stringResource(R.string.delete_confirmation)) },
+      confirmButton = { TextButton(onClick = confirmDelete) { Text(stringResource(R.string.delete)) } },
+      dismissButton = { TextButton(onClick = { -> showDeleteConfirmation = false }) { Text(stringResource(R.string.cancel)) } },
+    )
   }
 
   if (showTimePicker) {

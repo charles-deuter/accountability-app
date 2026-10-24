@@ -6,8 +6,11 @@
     <string name="task_list_empty">No reminders yet. Tap + to add one.</string>
     <string name="overdue">Overdue</string>
 
-    <!-- Add Task -->
+    <!-- Task Form -->
     <string name="add_task_title">New reminder</string>
+    <string name="edit_task_title">Edit reminder</string>
+    <string name="delete">Delete</string>
+    <string name="delete_confirmation">Delete this reminder?</string>
     <string name="navigate_back">Back</string>
     <string name="title_label">Title</string>
     <string name="title_required">Title is required</string>

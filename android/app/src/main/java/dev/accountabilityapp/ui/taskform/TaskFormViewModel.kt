@@ -16,6 +16,7 @@ data class TaskFormUiState(
   val title: String = "",
   val scheduledTime: Instant,
   val showTitleRequired: Boolean = false,
+  val isEditing: Boolean = false,
   val isFinished: Boolean = false,
   /** True while an existing Task's values are still being read into the form. */
   val isLoading: Boolean = false,
@@ -25,7 +26,7 @@ data class TaskFormUiState(
 class TaskFormViewModel(private val repository: TaskRepository, clock: Clock, private val taskId: Long? = null) : ViewModel() {
 
   private val isEditing = taskId != null
-  private val _uiState = MutableStateFlow(TaskFormUiState(scheduledTime = nextFullHour(clock), isLoading = isEditing))
+  private val _uiState = MutableStateFlow(TaskFormUiState(scheduledTime = nextFullHour(clock), isEditing = isEditing, isLoading = isEditing))
   val uiState: StateFlow<TaskFormUiState> = _uiState.asStateFlow()
 
   init {

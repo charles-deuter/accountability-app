@@ -1,5 +1,6 @@
 package dev.accountabilityapp.ui.tasklist
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -34,16 +35,21 @@ import dev.accountabilityapp.ui.formatDateTime
 import java.time.Instant
 
 @Composable
-fun TaskListRoute(onAddTask: () -> Unit, modifier: Modifier = Modifier) {
+fun TaskListRoute(onAddTask: () -> Unit, onEditTask: (taskId: Long) -> Unit, modifier: Modifier = Modifier) {
   val container = appContainerFrom(LocalContext.current)
   val viewModel: TaskListViewModel = viewModel(initializer = { -> TaskListViewModel(container.taskRepository, container.clock) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
-  TaskListScreen(state = state, onAddTask = onAddTask, modifier = modifier)
+  TaskListScreen(state = state, onAddTask = onAddTask, onEditTask = onEditTask, modifier = modifier)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskListScreen(state: TaskListUiState, onAddTask: () -> Unit, modifier: Modifier = Modifier) {
+fun TaskListScreen(
+  state: TaskListUiState,
+  onAddTask: () -> Unit,
+  onEditTask: (taskId: Long) -> Unit,
+  modifier: Modifier = Modifier,
+) {
   Scaffold(
     modifier = modifier,
     topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
@@ -58,7 +64,7 @@ fun TaskListScreen(state: TaskListUiState, onAddTask: () -> Unit, modifier: Modi
     } else {
       LazyColumn(Modifier.fillMaxSize().padding(innerPadding)) {
         items(state.items, key = { item -> item.id }) { item ->
-          TaskRow(item)
+          TaskRow(item, onClick = { -> onEditTask(item.id) })
           HorizontalDivider()
         }
       }
@@ -67,7 +73,7 @@ fun TaskListScreen(state: TaskListUiState, onAddTask: () -> Unit, modifier: Modi
 }
 
 @Composable
-private fun TaskRow(item: TaskListItem) {
+private fun TaskRow(item: TaskListItem, onClick: () -> Unit) {
   val overdueColor = MaterialTheme.colorScheme.error
   val accentColor = if (item.isOverdue) overdueColor else MaterialTheme.colorScheme.onSurfaceVariant
   val fireTimeLabel = formatDateTime(item.fireTime)
@@ -78,6 +84,7 @@ private fun TaskRow(item: TaskListItem) {
     headlineContent = { Text(item.title) },
     supportingContent = { Text(supportingText, color = accentColor) },
     colors = ListItemDefaults.colors(headlineColor = headlineColor),
+    modifier = Modifier.clickable(onClick = onClick),
   )
 }
 
@@ -94,6 +101,7 @@ private fun TaskListScreenPreview() {
           )
         ),
       onAddTask = { -> },
+      onEditTask = { _ -> },
     )
   }
 }

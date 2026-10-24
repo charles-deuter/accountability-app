@@ -21,8 +21,14 @@ fun MainNavigation() {
     entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
     entryProvider =
       entryProvider {
-        entry<TaskList> { TaskListRoute(onAddTask = { -> backStack.add(AddTask) }) }
-        entry<AddTask> { TaskFormRoute(onDone = { -> backStack.removeLastOrNull() }) }
+        entry<TaskList> {
+          TaskListRoute(
+            onAddTask = { -> backStack.add(AddTask) },
+            onEditTask = { taskId -> backStack.add(EditTask(taskId)) },
+          )
+        }
+        entry<AddTask> { TaskFormRoute(taskId = null, onDone = { -> backStack.removeLastOrNull() }) }
+        entry<EditTask> { editTaskKey -> TaskFormRoute(taskId = editTaskKey.taskId, onDone = { -> backStack.removeLastOrNull() }) }
       },
   )
 }
