@@ -10,7 +10,11 @@ import kotlinx.coroutines.flow.Flow
 interface TaskDao {
   @Insert suspend fun insert(task: Task): Long
 
-  @Query("SELECT * FROM tasks WHERE status != 'COMPLETED' ORDER BY scheduledTime")
+  /** Ordered by Fire time: the snoozed-until time while Snoozed, otherwise the scheduled time (see fireTimeOf). */
+  @Query(
+    "SELECT * FROM tasks WHERE status != 'COMPLETED' " +
+      "ORDER BY CASE WHEN status = 'SNOOZED' THEN snoozedUntil ELSE scheduledTime END"
+  )
   fun observeTaskList(): Flow<List<Task>>
 
   /** Every Task that isn't Completed: the ones that can still need a Reminder. */

@@ -24,6 +24,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Its own empty task affinity, so finishing returns to whatever app the user was in, not to ours. -->
+        <activity
+            android:name=".ui.snooze.SnoozeActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:taskAffinity=""
+            android:theme="@style/Theme.AccountabilityApp.Translucent" />
+
         <receiver
             android:name=".reminders.ReminderAlarmReceiver"
             android:exported="false" />

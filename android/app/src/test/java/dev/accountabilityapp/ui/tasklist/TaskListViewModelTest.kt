@@ -8,6 +8,7 @@ import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.MainDispatcherRule
 import dev.accountabilityapp.SettableClock
 import dev.accountabilityapp.data.AppDatabase
+import dev.accountabilityapp.data.SnoozeDuration
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -49,6 +50,19 @@ class TaskListViewModelTest {
     val items = viewModel.uiState.first({ state -> state.items.size == 2 }).items
 
     assertEquals(mapOf("Take meds" to true, "Call dentist" to false), items.associate({ item -> item.title to item.isOverdue }))
+  })
+
+  @Test
+  fun aSnoozedTask_carriesItsSnoozeCountAndSnoozedUntilTime_forTheBadge() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+    taskService.snooze(medsId, SnoozeDuration.FIFTEEN_MINUTES)
+    taskService.snooze(medsId, SnoozeDuration.THIRTY_MINUTES)
+    val viewModel = TaskListViewModel(taskService, noon)
+
+    val item = viewModel.uiState.first({ state -> state.items.isNotEmpty() }).items.single()
+
+    assertEquals(2, item.snoozeCount)
+    assertEquals(Instant.parse("2026-10-21T12:30:00Z"), item.snoozedUntil)
   })
 
   @Test

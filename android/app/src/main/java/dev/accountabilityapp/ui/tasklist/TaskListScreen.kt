@@ -76,7 +76,13 @@ fun TaskListScreen(
 private fun TaskRow(item: TaskListItem, onClick: () -> Unit) {
   val overdueColor = MaterialTheme.colorScheme.error
   val accentColor = if (item.isOverdue) overdueColor else MaterialTheme.colorScheme.onSurfaceVariant
-  val fireTimeLabel = formatDateTime(item.fireTime)
+  val snoozedUntil = item.snoozedUntil
+  val fireTimeLabel =
+    if (snoozedUntil != null) {
+      stringResource(R.string.snoozed_badge, item.snoozeCount, formatDateTime(snoozedUntil))
+    } else {
+      formatDateTime(item.fireTime)
+    }
   val overdueLabel = stringResource(R.string.overdue)
   val supportingText = if (item.isOverdue) "$overdueLabel · $fireTimeLabel" else fireTimeLabel
   val headlineColor = if (item.isOverdue) overdueColor else MaterialTheme.colorScheme.onSurface
@@ -98,6 +104,14 @@ private fun TaskListScreenPreview() {
           listOf(
             TaskListItem(1, "Take meds", Instant.parse("2026-10-21T09:00:00Z"), isOverdue = true),
             TaskListItem(2, "Call dentist", Instant.parse("2026-10-22T15:00:00Z"), isOverdue = false),
+            TaskListItem(
+              3,
+              "Pay rent",
+              Instant.parse("2026-10-22T17:00:00Z"),
+              isOverdue = false,
+              snoozeCount = 3,
+              snoozedUntil = Instant.parse("2026-10-22T17:00:00Z"),
+            ),
           )
         ),
       onAddTask = { -> },

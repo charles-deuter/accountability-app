@@ -57,6 +57,17 @@ class TaskServiceTest {
   })
 
   @Test
+  fun aSnoozedTask_isOrderedByItsSnoozedUntilTime() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:00:00Z"))
+    taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T12:30:00Z"))
+
+    taskService.snooze(medsId, SnoozeDuration.ONE_HOUR)
+
+    val titles = taskService.observeTaskList().first().map({ task -> task.title })
+    assertEquals(listOf("Call dentist", "Take meds"), titles)
+  })
+
+  @Test
   fun completedTask_leavesTheTaskList() = runTest(testBody = { ->
     val dentistId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
     taskService.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
