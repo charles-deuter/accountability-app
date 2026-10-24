@@ -95,7 +95,7 @@ class RemindersTest {
     for (reminder in reminders) {
       val ongoingFlag = reminder.flags and Notification.FLAG_ONGOING_EVENT
       assertTrue(ongoingFlag != 0)
-      assertEquals(listOf("Done"), reminder.actions.map({ action -> action.title.toString() }))
+      assertEquals(listOf("Done", "Snooze"), reminder.actions.map({ action -> action.title.toString() }))
     }
   })
 
@@ -159,6 +159,20 @@ class RemindersTest {
 
     assertEquals(listOf(Instant.parse("2026-10-24T18:00:00Z")), alarmTimes())
     assertEquals(TaskStatus.PENDING, taskService.findTask(medsId)?.status)
+  })
+
+  @Test
+  fun swipingAReminderAway_snoozesItForThirtyMinutes() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    val reminder = notificationManager.allNotifications.single()
+
+    // What Android sends when the user swipes the notification away.
+    val swipeIntent = shadowOf(reminder.deleteIntent).savedIntent
+    handleReminderAction(swipeIntent, taskService)
+
+    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), taskService.findTask(medsId)?.snoozedUntil)
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
   })
 
   @Test
