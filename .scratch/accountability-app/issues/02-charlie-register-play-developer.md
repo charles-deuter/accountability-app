@@ -18,10 +18,12 @@ Decision: **public email on an owned domain with forwarding** (not Gmail). Gmail
 
 ### Domain and email
 
-- [ ] Pick a domain name (studio or personal brand, not the app name) and record it on this ticket
-- [ ] Register it. Cloudflare Registrar is the simplest single stop (at-cost pricing, and Email Routing is built in); any registrar plus a forwarding service such as ImprovMX also works
-- [ ] Set up a forwarding address (e.g. `apps@<domain>` or `support@<domain>`) that delivers to the personal inbox, and confirm a test email arrives
-- [ ] Skip "send as" (replying from the domain address) until there is user email to answer
+- [x] Pick a domain name (studio or personal brand, not the app name) and record it on this ticket
+- [x] Register it. Cloudflare Registrar is the simplest single stop (at-cost pricing, and Email Routing is built in); any registrar plus a forwarding service such as ImprovMX also works
+- [x] Set up a forwarding address (e.g. `apps@<domain>` or `support@<domain>`) that delivers to the personal inbox, and confirm a test email arrives
+- [x] Skip "send as" (replying from the domain address) until there is user email to answer
+
+- [ ] Optional: publish a DMARC record (`_dmarc` TXT `v=DMARC1; p=reject`) so nobody can send mail that pretends to come from the domain, which never sends mail itself
 
 ### Play Console signup
 
@@ -38,3 +40,13 @@ Decision: **public email on an owned domain with forwarding** (not Gmail). Gmail
 
 - [ ] Recruit at least 12 testers, ideally 14–15 for slack: each needs a Google account and an Android phone, and must agree to stay opted in for 14 days straight once ticket 21 opens the closed test
 - [ ] Record each tester's Google account email somewhere private (not in this repo) for ticket 21
+
+## Comments
+
+**2026-10-22: domain and email done**
+
+- Domain: **`deuterology.dev`**, registered on Cloudflare Registrar (auto-renew on). It doubles as Charlie's portfolio domain and the public developer brand ("Deuterology").
+- Email Routing is on. DNS check: MX → `route{1,2,3}.mx.cloudflare.net`, SPF includes `_spf.mx.cloudflare.net`, DKIM published, nameservers on Cloudflare.
+- A forwarding address on the domain delivers to Charlie's personal inbox, confirmed with a test message from a separate account. The personal address is deliberately not recorded here.
+- `deuterology.com` was taken. It lapsed on 2026-09-01 and was in the redemption period on 2026-10-22, so it may drop around mid-November 2026 if the old owner doesn't renew. If it does, it's an optional grab to redirect to `.dev`.
+- Next: the Play Console signup section, using the domain address as the public developer email.
