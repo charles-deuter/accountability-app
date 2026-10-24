@@ -10,6 +10,10 @@ An Android reminder app for people with ADHD. Its reminders can't be dismissed, 
 One thing the user has to do at a specific time. It is the item that appears in the Task List.
 _Avoid_: Todo, item, event
 
+**Task List**:
+The home screen's single list of every Task that isn't Completed, ordered by Fire time.
+_Avoid_: Inbox, agenda, dashboard
+
 **Template**:
 A recurring series that owns a Recurrence and keeps exactly one pending Instance alive at a time.
 _Avoid_: Recurring task, routine, schedule
