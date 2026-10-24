@@ -15,7 +15,7 @@ import dev.accountabilityapp.data.Task
 import dev.accountabilityapp.data.fireTimeOf
 import dev.accountabilityapp.ui.formatTime
 import dev.accountabilityapp.ui.reminder.ReminderActivity
-import dev.accountabilityapp.ui.snooze.SnoozeActivity
+import dev.accountabilityapp.ui.snooze.snoozePickerIntentFrom
 
 /** Reminders in the notification shade: one notification per due Task, keyed by the Task's id. */
 class ReminderNotifications(private val context: Context) {
@@ -96,6 +96,6 @@ private fun takeoverIntentFrom(context: Context, taskId: Long): PendingIntent {
 }
 
 private fun snoozeIntentFrom(context: Context, taskId: Long): PendingIntent {
-  val intent = Intent(context, SnoozeActivity::class.java).putExtra(EXTRA_TASK_ID, taskId)
+  val intent = snoozePickerIntentFrom(context, taskId)
   return PendingIntent.getActivity(context, notificationIdOf(taskId), intent, PendingIntent.FLAG_IMMUTABLE)
 }

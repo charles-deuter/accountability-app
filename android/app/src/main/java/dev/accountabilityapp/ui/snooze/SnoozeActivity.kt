@@ -1,5 +1,7 @@
 package dev.accountabilityapp.ui.snooze
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
@@ -38,3 +40,7 @@ class SnoozeActivity : ComponentActivity() {
     }
   }
 }
+
+/** Opens the Snooze picker for one Task: from the Reminder's Snooze button or from the lock-screen takeover. */
+fun snoozePickerIntentFrom(context: Context, taskId: Long): Intent =
+  Intent(context, SnoozeActivity::class.java).putExtra(EXTRA_TASK_ID, taskId)
