@@ -3,6 +3,8 @@
 
     <!-- Exact Reminder alarms. Not pre-granted from Android 14; ticket 11 asks the user for it. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Android 13+: asked for when the user opens the Task Form. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".AccountabilityApplication"
