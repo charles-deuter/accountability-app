@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">Accountability App</string>
+
+    <!-- Task List -->
+    <string name="add_task">Add task</string>
+    <string name="task_list_empty">No reminders yet. Tap + to add one.</string>
+    <string name="overdue">Overdue</string>
+
+    <!-- Add Task -->
+    <string name="add_task_title">New reminder</string>
+    <string name="navigate_back">Back</string>
+    <string name="title_label">Title</string>
+    <string name="title_required">Title is required</string>
+    <string name="save">Save</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
 </resources>

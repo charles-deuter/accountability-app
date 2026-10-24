@@ -3,6 +3,7 @@ plugins {
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.ksp)
+  alias(libs.plugins.room)
 }
 
 android {
@@ -10,7 +11,8 @@ android {
     compileSdk = 36
     defaultConfig {
         applicationId = "dev.accountabilityapp"
-        minSdk = 24
+        // 26: java.time ships from Android 8.0, so no core-library desugaring is needed.
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -38,7 +40,7 @@ android {
       // Robolectric needs merged resources to render Compose and read strings on the JVM.
       unitTests.isIncludeAndroidResources = true
       // Robolectric's FileDescriptor interceptor reads JDK internals that Java 21 no longer exports.
-      unitTests.all { it.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED") }
+      unitTests.all { test -> test.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED") }
     }
 
     packaging {
@@ -46,6 +48,10 @@ android {
         excludes += "/META-INF/{AL2.0,LGPL2.1}"
       }
     }
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 // Pin every resolved dependency, including transitives, in app/gradle.lockfile.
@@ -77,6 +83,7 @@ dependencies {
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.compose.material3)
+  implementation(libs.androidx.compose.material.icons.core)
   // Tooling
   debugImplementation(libs.androidx.compose.ui.tooling)
   // Instrumented tests

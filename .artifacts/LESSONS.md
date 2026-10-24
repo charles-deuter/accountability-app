@@ -16,3 +16,13 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 
 **Wrong:** Added tickets 23 and 24 (CI) to ticket 03's PR because that PR already carried ticket housekeeping. Charlie wanted them in a separate PR.
 **Rule:** A feature PR only touches its own ticket (resolving it, plus follow-up items it directly creates). New or reshaped tickets go in their own PR off `main`, in their own commit.
+
+## 2026-10-23: a partial answer read as a retraction
+
+**Wrong:** I asked two questions (which lambdas go in parentheses, and whether to name the argument). Charlie's reply answered only the naming question, and I read it as dropping the parentheses rule altogether.
+**Rule:** When a reply answers only some of several open questions, treat the others as still open. Never conclude a request was withdrawn unless the user says so.
+
+## 2026-10-24: a stacked PR merged into its stale base
+
+**Wrong:** PR #2 merged mid-session and I never retargeted PR #3 to `main`, so PR #3 merged into the dead `feat/03` branch and ticket 05 never reached `main`.
+**Rule:** In a PR stack, check the base's state (`gh pr view <base>`) before each push and at the end of every turn. Once the base merges, retarget the next PR to `main` straight away.
