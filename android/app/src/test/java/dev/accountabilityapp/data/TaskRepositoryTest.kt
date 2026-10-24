@@ -66,6 +66,28 @@ class TaskRepositoryTest {
   })
 
   @Test
+  fun editedTask_changesInPlace_ratherThanAddingANewOne() = runTest(testBody = { ->
+    val taskId = repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
+
+    repository.update(taskId, title = "Call the dentist back", scheduledTime = Instant.parse("2026-10-23T14:00:00Z"))
+
+    val edited = repository.observeTaskList().first().single()
+    assertEquals(taskId, edited.id)
+    assertEquals("Call the dentist back", edited.title)
+    assertEquals(Instant.parse("2026-10-23T14:00:00Z"), edited.scheduledTime)
+  })
+
+  @Test
+  fun deletedTask_leavesTheTaskList() = runTest(testBody = { ->
+    val dentistId = repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
+    repository.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
+
+    repository.delete(dentistId)
+
+    assertEquals(listOf("Pay rent"), repository.observeTaskList().first().map({ task -> task.title }))
+  })
+
+  @Test
   fun tasks_surviveClosingAndReopeningTheAppDatabase() = runTest(testBody = { ->
     val fileName = "restart-test.db"
     context.deleteDatabase(fileName)

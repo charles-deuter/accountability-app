@@ -12,5 +12,9 @@ class TaskRepository(private val taskDao: TaskDao, private val clock: Clock) {
   suspend fun add(title: String, scheduledTime: Instant): Long =
     taskDao.insert(Task(title = title, scheduledTime = scheduledTime, createdAt = clock.instant()))
 
+  suspend fun update(taskId: Long, title: String, scheduledTime: Instant) = taskDao.update(taskId, title, scheduledTime)
+
+  suspend fun delete(taskId: Long) = taskDao.delete(taskId)
+
   suspend fun complete(taskId: Long) = taskDao.markCompleted(taskId, completedAt = clock.instant())
 }
