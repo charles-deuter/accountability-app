@@ -1,4 +1,4 @@
-package dev.accountabilityapp.ui.addtask
+package dev.accountabilityapp.ui.taskform
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,17 +12,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class AddTaskUiState(
+data class TaskFormUiState(
   val title: String = "",
   val scheduledTime: Instant,
   val showTitleRequired: Boolean = false,
   val isSaved: Boolean = false,
 )
 
-class AddTaskViewModel(private val repository: TaskRepository, clock: Clock) : ViewModel() {
+class TaskFormViewModel(private val repository: TaskRepository, clock: Clock) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(AddTaskUiState(scheduledTime = nextFullHour(clock)))
-  val uiState: StateFlow<AddTaskUiState> = _uiState.asStateFlow()
+  private val _uiState = MutableStateFlow(TaskFormUiState(scheduledTime = nextFullHour(clock)))
+  val uiState: StateFlow<TaskFormUiState> = _uiState.asStateFlow()
 
   fun onTitleChange(title: String) {
     _uiState.update({ state -> state.copy(title = title, showTitleRequired = false) })

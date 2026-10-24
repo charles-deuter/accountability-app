@@ -1,4 +1,4 @@
-package dev.accountabilityapp.ui.addtask
+package dev.accountabilityapp.ui.taskform
 
 import android.content.Context
 import androidx.room.Room
@@ -20,7 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class AddTaskViewModelTest {
+class TaskFormViewModelTest {
 
   @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
@@ -36,7 +36,7 @@ class AddTaskViewModelTest {
 
   @Test
   fun savingABlankTitle_showsTitleRequired_andSavesNothing() = runTest(testBody = { ->
-    val viewModel = AddTaskViewModel(repository, clock)
+    val viewModel = TaskFormViewModel(repository, clock)
 
     viewModel.onTitleChange("   ")
     viewModel.save()
@@ -47,7 +47,7 @@ class AddTaskViewModelTest {
 
   @Test
   fun savingATitleAndTime_addsTheTask_andReportsSaved() = runTest(testBody = { ->
-    val viewModel = AddTaskViewModel(repository, clock)
+    val viewModel = TaskFormViewModel(repository, clock)
 
     viewModel.onTitleChange("Call dentist")
     viewModel.onScheduledTimeChange(Instant.parse("2026-10-23T15:30:00Z"))

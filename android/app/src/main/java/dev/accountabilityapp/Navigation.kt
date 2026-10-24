@@ -6,7 +6,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import dev.accountabilityapp.ui.addtask.AddTaskRoute
+import dev.accountabilityapp.ui.taskform.TaskFormRoute
 import dev.accountabilityapp.ui.tasklist.TaskListRoute
 
 @Composable
@@ -22,7 +22,7 @@ fun MainNavigation() {
     entryProvider =
       entryProvider {
         entry<TaskList> { TaskListRoute(onAddTask = { -> backStack.add(AddTask) }) }
-        entry<AddTask> { AddTaskRoute(onDone = { -> backStack.removeLastOrNull() }) }
+        entry<AddTask> { TaskFormRoute(onDone = { -> backStack.removeLastOrNull() }) }
       },
   )
 }

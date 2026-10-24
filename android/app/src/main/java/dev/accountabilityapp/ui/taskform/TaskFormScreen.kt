@@ -1,4 +1,4 @@
-package dev.accountabilityapp.ui.addtask
+package dev.accountabilityapp.ui.taskform
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,14 +46,14 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 
 @Composable
-fun AddTaskRoute(onDone: () -> Unit, modifier: Modifier = Modifier) {
+fun TaskFormRoute(onDone: () -> Unit, modifier: Modifier = Modifier) {
   val container = appContainerFrom(LocalContext.current)
-  val viewModel: AddTaskViewModel = viewModel(initializer = { -> AddTaskViewModel(container.taskRepository, container.clock) })
+  val viewModel: TaskFormViewModel = viewModel(initializer = { -> TaskFormViewModel(container.taskRepository, container.clock) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
 
   LaunchedEffect(state.isSaved, block = { -> if (state.isSaved) onDone() })
 
-  AddTaskScreen(
+  TaskFormScreen(
     state = state,
     onTitleChange = viewModel::onTitleChange,
     onScheduledTimeChange = viewModel::onScheduledTimeChange,
@@ -65,8 +65,8 @@ fun AddTaskRoute(onDone: () -> Unit, modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddTaskScreen(
-  state: AddTaskUiState,
+fun TaskFormScreen(
+  state: TaskFormUiState,
   onTitleChange: (String) -> Unit,
   onScheduledTimeChange: (Instant) -> Unit,
   onSave: () -> Unit,
