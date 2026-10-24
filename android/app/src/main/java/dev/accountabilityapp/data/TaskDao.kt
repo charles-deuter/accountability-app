@@ -13,6 +13,10 @@ interface TaskDao {
   @Query("SELECT * FROM tasks WHERE status != 'COMPLETED' ORDER BY scheduledTime")
   fun observeTaskList(): Flow<List<Task>>
 
+  /** Every Task that isn't Completed: the ones that can still need a Reminder. */
+  @Query("SELECT * FROM tasks WHERE status != 'COMPLETED'")
+  suspend fun findOpenTasks(): List<Task>
+
   @Query("SELECT * FROM tasks WHERE id = :taskId")
   suspend fun findTask(taskId: Long): Task?
 

@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.MainDispatcherRule
 import dev.accountabilityapp.SettableClock
 import dev.accountabilityapp.data.AppDatabase
-import dev.accountabilityapp.data.TaskService
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -33,7 +33,7 @@ class TaskListViewModelTest {
   private val context: Context = ApplicationProvider.getApplicationContext()
   private val noon = Clock.fixed(Instant.parse("2026-10-21T12:00:00Z"), ZoneOffset.UTC)
   private val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
-  private val taskService = TaskService(database.taskDao(), noon)
+  private val taskService = AppContainer(context, clock = noon, database = database).taskService
 
   @After
   fun tearDown() {

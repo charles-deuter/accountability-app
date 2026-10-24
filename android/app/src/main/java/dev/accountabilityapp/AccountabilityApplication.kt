@@ -4,7 +4,12 @@ import android.app.Application
 import android.content.Context
 import dev.accountabilityapp.data.AppDatabase
 import dev.accountabilityapp.data.TaskService
+import dev.accountabilityapp.reminders.ReminderAlarm
+import dev.accountabilityapp.reminders.ReminderSync
 import java.time.Clock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class AccountabilityApplication : Application() {
   val container: AppContainer by lazy({ -> AppContainer(this) })
@@ -19,7 +24,10 @@ class AppContainer(
   val clock: Clock = Clock.systemDefaultZone(),
   val database: AppDatabase = AppDatabase.open(context),
 ) {
-  val taskService: TaskService = TaskService(database.taskDao(), clock)
+  /** For work that must outlive a screen, such as a broadcast receiver's database read. */
+  val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+  val reminderSync: ReminderSync = ReminderSync(database.taskDao(), clock, ReminderAlarm(context))
+  val taskService: TaskService = TaskService(database.taskDao(), clock, reminderSync)
 }
 
 /**

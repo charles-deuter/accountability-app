@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.accountabilityapp.AppContainer
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -26,7 +27,7 @@ class TaskServiceTest {
   @Before
   fun setUp() {
     database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
-    taskService = TaskService(database.taskDao(), clock)
+    taskService = AppContainer(context, clock = clock, database = database).taskService
   }
 
   @After
@@ -92,11 +93,11 @@ class TaskServiceTest {
     val fileName = "restart-test.db"
     context.deleteDatabase(fileName)
     val firstLaunch = AppDatabase.open(context, fileName)
-    TaskService(firstLaunch.taskDao(), clock).add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
+    AppContainer(context, clock = clock, database = firstLaunch).taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
     firstLaunch.close()
 
     val secondLaunch = AppDatabase.open(context, fileName)
-    val titles = TaskService(secondLaunch.taskDao(), clock).observeTaskList().first().map({ task -> task.title })
+    val titles = AppContainer(context, clock = clock, database = secondLaunch).taskService.observeTaskList().first().map({ task -> task.title })
     secondLaunch.close()
 
     assertEquals(listOf("Call dentist"), titles)
