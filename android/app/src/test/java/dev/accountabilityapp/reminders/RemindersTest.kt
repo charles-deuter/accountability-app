@@ -14,6 +14,7 @@ import dev.accountabilityapp.data.AppDatabase
 import dev.accountabilityapp.data.SnoozeDuration
 import dev.accountabilityapp.data.Task
 import dev.accountabilityapp.data.TaskStatus
+import dev.accountabilityapp.ui.reminder.ReminderActivity
 import java.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -159,6 +160,18 @@ class RemindersTest {
 
     assertEquals(listOf(Instant.parse("2026-10-24T18:00:00Z")), alarmTimes())
     assertEquals(TaskStatus.PENDING, taskService.findTask(medsId)?.status)
+  })
+
+  @Test
+  fun aReminder_carriesAFullScreenIntentToTheTakeoverForItsTask() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+
+    fireTheAlarm()
+
+    val reminder = notificationManager.allNotifications.single()
+    val takeoverIntent = shadowOf(reminder.fullScreenIntent).savedIntent
+    assertEquals(ReminderActivity::class.java.name, takeoverIntent.component?.className)
+    assertEquals(medsId, takeoverIntent.getLongExtra(EXTRA_TASK_ID, -1))
   })
 
   @Test

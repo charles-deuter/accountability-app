@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- Android 13+: asked for when the user opens the Task Form. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The lock-screen takeover. Android 14+ asks the user for it (ticket 11); Play requires a declaration (ticket 21). -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
         android:name=".AccountabilityApplication"
@@ -23,6 +25,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- The lock-screen takeover: shows without unlocking and wakes the screen, like an incoming call. -->
+        <activity
+            android:name=".ui.reminder.ReminderActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:turnScreenOn="true" />
 
         <!-- Its own empty task affinity, so finishing returns to whatever app the user was in, not to ours. -->
         <activity
