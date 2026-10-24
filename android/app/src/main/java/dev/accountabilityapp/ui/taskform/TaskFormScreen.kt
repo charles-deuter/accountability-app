@@ -51,7 +51,7 @@ fun TaskFormRoute(onDone: () -> Unit, modifier: Modifier = Modifier) {
   val viewModel: TaskFormViewModel = viewModel(initializer = { -> TaskFormViewModel(container.taskRepository, container.clock) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-  LaunchedEffect(state.isSaved, block = { -> if (state.isSaved) onDone() })
+  LaunchedEffect(state.isFinished, block = { -> if (state.isFinished) onDone() })
 
   TaskFormScreen(
     state = state,

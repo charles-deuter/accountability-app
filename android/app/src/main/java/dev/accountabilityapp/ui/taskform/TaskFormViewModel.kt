@@ -16,13 +16,32 @@ data class TaskFormUiState(
   val title: String = "",
   val scheduledTime: Instant,
   val showTitleRequired: Boolean = false,
-  val isSaved: Boolean = false,
+  val isFinished: Boolean = false,
+  /** True while an existing Task's values are still being read into the form. */
+  val isLoading: Boolean = false,
 )
 
-class TaskFormViewModel(private val repository: TaskRepository, clock: Clock) : ViewModel() {
+/** Adds a new Task, or edits the existing one when [taskId] is given. */
+class TaskFormViewModel(private val repository: TaskRepository, clock: Clock, private val taskId: Long? = null) : ViewModel() {
 
-  private val _uiState = MutableStateFlow(TaskFormUiState(scheduledTime = nextFullHour(clock)))
+  private val isEditing = taskId != null
+  private val _uiState = MutableStateFlow(TaskFormUiState(scheduledTime = nextFullHour(clock), isLoading = isEditing))
   val uiState: StateFlow<TaskFormUiState> = _uiState.asStateFlow()
+
+  init {
+    if (taskId != null) {
+      viewModelScope.launch(block = { -> loadForEditing(taskId) })
+    }
+  }
+
+  private suspend fun loadForEditing(taskId: Long) {
+    val task = repository.findTask(taskId)
+    if (task == null) {
+      _uiState.update({ state -> state.copy(isLoading = false) })
+      return
+    }
+    _uiState.update({ state -> state.copy(title = task.title, scheduledTime = task.scheduledTime, isLoading = false) })
+  }
 
   fun onTitleChange(title: String) {
     _uiState.update({ state -> state.copy(title = title, showTitleRequired = false) })
@@ -38,9 +57,23 @@ class TaskFormViewModel(private val repository: TaskRepository, clock: Clock) : 
       _uiState.update({ state -> state.copy(showTitleRequired = true) })
       return
     }
+    val title = form.title.trim()
     viewModelScope.launch(block = { ->
-      repository.add(title = form.title.trim(), scheduledTime = form.scheduledTime)
-      _uiState.update({ state -> state.copy(isSaved = true) })
+      if (taskId == null) {
+        repository.add(title = title, scheduledTime = form.scheduledTime)
+      } else {
+        repository.update(taskId, title = title, scheduledTime = form.scheduledTime)
+      }
+      _uiState.update({ state -> state.copy(isFinished = true) })
+    })
+  }
+
+  /** Deletes the Task being edited. The screen asks for confirmation before calling this. */
+  fun delete() {
+    val editedTaskId = taskId ?: return
+    viewModelScope.launch(block = { ->
+      repository.delete(editedTaskId)
+      _uiState.update({ state -> state.copy(isFinished = true) })
     })
   }
 }
