@@ -41,4 +41,19 @@ class AddTaskEndToEndTest {
 
     composeTestRule.onNodeWithText("Call dentist").assertIsDisplayed()
   }
+
+  @Test
+  fun addingTwoTasksInARow_showsBoth() {
+    addTask("Call dentist")
+    addTask("Pay rent")
+
+    composeTestRule.onNodeWithText("Call dentist").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Pay rent").assertIsDisplayed()
+  }
+
+  private fun addTask(title: String) {
+    composeTestRule.onNodeWithContentDescription("Add task").performClick()
+    composeTestRule.onNodeWithText("Title").performTextInput(title)
+    composeTestRule.onNodeWithText("Save").performClick()
+  }
 }
