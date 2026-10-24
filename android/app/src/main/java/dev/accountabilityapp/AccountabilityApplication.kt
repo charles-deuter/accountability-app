@@ -5,6 +5,7 @@ import android.content.Context
 import dev.accountabilityapp.data.AppDatabase
 import dev.accountabilityapp.data.TaskService
 import dev.accountabilityapp.reminders.ReminderAlarm
+import dev.accountabilityapp.reminders.ReminderNotifications
 import dev.accountabilityapp.reminders.ReminderSync
 import java.time.Clock
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +27,8 @@ class AppContainer(
 ) {
   /** For work that must outlive a screen, such as a broadcast receiver's database read. */
   val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-  val reminderSync: ReminderSync = ReminderSync(database.taskDao(), clock, ReminderAlarm(context))
+  val reminderSync: ReminderSync =
+    ReminderSync(database.taskDao(), clock, ReminderAlarm(context), ReminderNotifications(context))
   val taskService: TaskService = TaskService(database.taskDao(), clock, reminderSync)
 }
 

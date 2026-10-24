@@ -29,5 +29,8 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
     reminderSync.sync()
   }
 
-  suspend fun complete(taskId: Long) = taskDao.markCompleted(taskId, completedAt = clock.instant())
+  suspend fun complete(taskId: Long) {
+    taskDao.markCompleted(taskId, completedAt = clock.instant())
+    reminderSync.sync()
+  }
 }

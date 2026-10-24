@@ -1,6 +1,8 @@
 package dev.accountabilityapp.reminders
 
 import android.app.AlarmManager
+import android.app.Notification
+import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -8,7 +10,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.SettableClock
 import dev.accountabilityapp.data.AppDatabase
+import dev.accountabilityapp.data.Task
 import java.time.Instant
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -32,6 +36,7 @@ class RemindersTest {
   private val container = AppContainer(context, clock = clock, database = database)
   private val taskService = container.taskService
   private val alarmManager = shadowOf(context.getSystemService(AlarmManager::class.java))
+  private val notificationManager = shadowOf(context.getSystemService(NotificationManager::class.java))
 
   @Before
   fun allowExactAlarms() {
@@ -73,5 +78,54 @@ class RemindersTest {
     assertEquals(emptyList<Instant>(), alarmTimes())
   })
 
+  @Test
+  fun twoTasksAtTheSameTime_shareOneAlarm_andWhenItFiresEachGetsAnOngoingNotificationWithDone() = runTest(testBody = { ->
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    assertEquals(listOf(Instant.parse("2026-10-24T13:00:00Z")), alarmTimes())
+
+    fireTheAlarm()
+
+    val reminders = notificationManager.allNotifications
+    assertEquals(setOf("Take meds", "Call dentist"), reminders.map(::titleOf).toSet())
+    for (reminder in reminders) {
+      val ongoingFlag = reminder.flags and Notification.FLAG_ONGOING_EVENT
+      assertTrue(ongoingFlag != 0)
+      assertEquals(listOf("Done"), reminder.actions.map({ action -> action.title.toString() }))
+    }
+  })
+
+  @Test
+  fun firingTheAlarm_remindsOnlyTheDueTask_andSetsTheAlarmForTheNextOne() = runTest(testBody = { ->
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-24T14:00:00Z"))
+
+    fireTheAlarm()
+
+    assertEquals(listOf("Take meds"), notificationManager.allNotifications.map(::titleOf))
+    assertEquals(listOf(Instant.parse("2026-10-24T14:00:00Z")), alarmTimes())
+  })
+
+  @Test
+  fun done_completesTheTask_clearsItsReminder_andTheTaskLeavesTheList() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+
+    taskService.complete(medsId)
+
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
+    assertEquals(emptyList<Task>(), taskService.observeTaskList().first())
+    assertEquals(clock.now, taskService.findTask(medsId)?.completedAt)
+  })
+
   private fun alarmTimes(): List<Instant> = alarmManager.scheduledAlarms.map({ alarm -> Instant.ofEpochMilli(alarm.triggerAtMs) })
+
+  /** Moves the clock to the alarm's time and does what ReminderAlarmReceiver does when Android delivers it. */
+  private suspend fun fireTheAlarm() {
+    val alarm = alarmManager.scheduledAlarms.single()
+    clock.now = Instant.ofEpochMilli(alarm.triggerAtMs)
+    container.reminderSync.sync()
+  }
 }
+
+private fun titleOf(notification: Notification): String = notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()

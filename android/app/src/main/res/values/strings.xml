@@ -17,4 +17,7 @@
     <string name="save">Save</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+
+    <!-- Reminders -->
+    <string name="done">Done</string>
 </resources>
