@@ -1,4 +1,4 @@
-package dev.accountabilityapp.reminders
+package dev.accountabilityapp.ui.snooze
 
 import androidx.activity.ComponentActivity
 
