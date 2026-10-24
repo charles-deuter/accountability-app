@@ -64,8 +64,11 @@ The Gradle wrapper (`gradlew`, `gradle/wrapper/gradle-wrapper.jar`) is committed
 ```bash
 android emulator list
 android emulator start Medium_Phone_API_37.0
+./gradlew :app:assembleDebug
 android run --apks=app/build/outputs/apk/debug/app-debug.apk
 android screen capture --output=screen.png
 ```
+
+For device tests, start the emulator with `--headless`. With a window, its display compositor can take most of the emulator's CPU on a Mac, and tests slow from about 4 seconds each to a minute or more, with flaky "Failed to inject touch input" errors. Use the window when you want to try the app yourself.
 
 Use `android sdk install <package>` (not the deprecated `sdkmanager`) for any extra SDK packages.
