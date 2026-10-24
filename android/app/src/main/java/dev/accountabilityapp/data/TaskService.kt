@@ -29,6 +29,11 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
     reminderSync.sync()
   }
 
+  suspend fun snooze(taskId: Long, duration: SnoozeDuration) {
+    taskDao.markSnoozed(taskId, snoozedUntil = snoozedUntilOf(duration, clock.instant()))
+    reminderSync.sync()
+  }
+
   suspend fun complete(taskId: Long) {
     taskDao.markCompleted(taskId, completedAt = clock.instant())
     reminderSync.sync()

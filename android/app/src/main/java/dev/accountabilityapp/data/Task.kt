@@ -25,8 +25,13 @@ enum class TaskStatus {
   COMPLETED,
 }
 
-/** The moment a Task's Reminder goes off. Snoozing moves it (ticket 08). */
-fun fireTimeOf(task: Task): Instant = task.scheduledTime
+/** The moment a Task's Reminder goes off: its scheduled time, or its snoozed-until time while Snoozed. */
+fun fireTimeOf(task: Task): Instant {
+  val isSnoozed = task.status == TaskStatus.SNOOZED
+  val snoozedUntil = task.snoozedUntil
+  if (isSnoozed && snoozedUntil != null) return snoozedUntil
+  return task.scheduledTime
+}
 
 /** Overdue: the Fire time has passed and the Task isn't Completed. */
 fun isOverdue(task: Task, now: Instant): Boolean {

@@ -11,7 +11,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.SettableClock
 import dev.accountabilityapp.data.AppDatabase
+import dev.accountabilityapp.data.SnoozeDuration
 import dev.accountabilityapp.data.Task
+import dev.accountabilityapp.data.TaskStatus
 import java.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -118,6 +120,45 @@ class RemindersTest {
     assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
     assertEquals(emptyList<Task>(), taskService.observeTaskList().first())
     assertEquals(clock.now, taskService.findTask(medsId)?.completedAt)
+  })
+
+  @Test
+  fun snoozingAShowingReminder_clearsIt_recordsTheSnooze_andMovesTheAlarm() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+
+    taskService.snooze(medsId, SnoozeDuration.THIRTY_MINUTES)
+
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
+    val snoozed = taskService.findTask(medsId)!!
+    assertEquals(TaskStatus.SNOOZED, snoozed.status)
+    assertEquals(1, snoozed.snoozeCount)
+    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), snoozed.snoozedUntil)
+    assertEquals(listOf(Instant.parse("2026-10-24T13:30:00Z")), alarmTimes())
+  })
+
+  @Test
+  fun whenTheSnoozeRunsOut_theSameReminderAppearsAgain() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    taskService.snooze(medsId, SnoozeDuration.FIFTEEN_MINUTES)
+
+    fireTheAlarm()
+
+    assertEquals(Instant.parse("2026-10-24T13:15:00Z"), clock.now)
+    assertEquals(listOf("Take meds"), notificationManager.allNotifications.map(::titleOf))
+  })
+
+  @Test
+  fun editingASnoozedTask_endsTheSnooze_soItFiresAtTheNewTime() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    taskService.snooze(medsId, SnoozeDuration.ONE_DAY)
+
+    taskService.update(medsId, title = "Take meds", scheduledTime = Instant.parse("2026-10-24T18:00:00Z"))
+
+    assertEquals(listOf(Instant.parse("2026-10-24T18:00:00Z")), alarmTimes())
+    assertEquals(TaskStatus.PENDING, taskService.findTask(medsId)?.status)
   })
 
   @Test
