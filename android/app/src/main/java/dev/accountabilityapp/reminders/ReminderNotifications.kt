@@ -1,9 +1,13 @@
 package dev.accountabilityapp.reminders
 
+import android.app.Notification
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import androidx.core.app.NotificationCompat
 import dev.accountabilityapp.MainActivity
 import dev.accountabilityapp.R
@@ -50,6 +54,21 @@ class ReminderNotifications(private val context: Context) {
 const val CHANNEL_ID = "reminders"
 
 private const val REMINDER_TAG = "reminder"
+
+/**
+ * Creates the Reminders channel; safe to call on every launch. Importance, sound and vibration are fixed once the channel
+ * exists on a device (only the user can change them), so they are chosen here for an alarm: high importance (heads-up and
+ * full-screen), the default alarm sound played as an alarm, and vibration.
+ */
+fun createReminderChannel(context: Context) {
+  val alarmAudio = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build()
+  val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+  val channel = NotificationChannel(CHANNEL_ID, context.getString(R.string.reminder_channel_name), NotificationManager.IMPORTANCE_HIGH)
+  channel.setSound(alarmSound, alarmAudio)
+  channel.enableVibration(true)
+  channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+  context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+}
 
 private fun notificationIdOf(taskId: Long): Int = taskId.toInt()
 

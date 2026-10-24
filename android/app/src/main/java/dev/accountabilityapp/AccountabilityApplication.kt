@@ -7,6 +7,7 @@ import dev.accountabilityapp.data.TaskService
 import dev.accountabilityapp.reminders.ReminderAlarm
 import dev.accountabilityapp.reminders.ReminderNotifications
 import dev.accountabilityapp.reminders.ReminderSync
+import dev.accountabilityapp.reminders.createReminderChannel
 import java.time.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +15,11 @@ import kotlinx.coroutines.SupervisorJob
 
 class AccountabilityApplication : Application() {
   val container: AppContainer by lazy({ -> AppContainer(this) })
+
+  override fun onCreate() {
+    super.onCreate()
+    createReminderChannel(this)
+  }
 }
 
 /**

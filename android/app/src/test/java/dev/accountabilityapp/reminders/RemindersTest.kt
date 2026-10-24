@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
+import android.media.AudioAttributes
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -117,6 +119,28 @@ class RemindersTest {
     assertEquals(emptyList<Task>(), taskService.observeTaskList().first())
     assertEquals(clock.now, taskService.findTask(medsId)?.completedAt)
   })
+
+  @Test
+  fun withoutTheExactAlarmPermission_savingStillSetsAnInexactAlarmThatFiresInDoze() = runTest(testBody = { ->
+    ShadowAlarmManager.setCanScheduleExactAlarms(false)
+
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+
+    val alarm = alarmManager.scheduledAlarms.single()
+    assertEquals(Instant.parse("2026-10-24T13:00:00Z").toEpochMilli(), alarm.triggerAtMs)
+    assertNotEquals(ShadowAlarmManager.WINDOW_EXACT, alarm.windowLengthMs)
+    assertTrue(alarm.isAllowWhileIdle)
+  })
+
+  @Test
+  fun appStartup_createsAnAlarmImportanceChannelWithSoundAndVibration() {
+    val channel = context.getSystemService(NotificationManager::class.java).getNotificationChannel(CHANNEL_ID)
+
+    assertEquals(NotificationManager.IMPORTANCE_HIGH, channel.importance)
+    assertEquals(AudioAttributes.USAGE_ALARM, channel.audioAttributes.usage)
+    assertTrue(channel.sound != null)
+    assertTrue(channel.shouldVibrate())
+  }
 
   private fun alarmTimes(): List<Instant> = alarmManager.scheduledAlarms.map({ alarm -> Instant.ofEpochMilli(alarm.triggerAtMs) })
 
