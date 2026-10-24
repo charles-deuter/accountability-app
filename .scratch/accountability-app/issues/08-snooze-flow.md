@@ -12,4 +12,5 @@
 - [ ] Back (or any other exit) from the picker snoozes for 15 minutes
 - [ ] The Task List badge shows the snooze count and the snoozed-until time, and the list orders snoozed tasks by snoozedUntil
 - [ ] When a snoozed alarm fires, the same notification appears again
+- [ ] Swiping the Reminder away (possible on an unlocked phone since Android 14) snoozes it for 30 minutes, so it can't be dismissed (decided 2026-10-24)
 - [ ] Unit tests cover snooze-until calculation for every preset and the back-button default
