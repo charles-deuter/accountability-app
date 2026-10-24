@@ -5,11 +5,11 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.accountabilityapp.MainDispatcherRule
+import dev.accountabilityapp.SettableClock
 import dev.accountabilityapp.data.AppDatabase
-import dev.accountabilityapp.data.TaskRepository
+import dev.accountabilityapp.data.TaskService
 import java.time.Clock
 import java.time.Instant
-import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -33,7 +33,7 @@ class TaskListViewModelTest {
   private val context: Context = ApplicationProvider.getApplicationContext()
   private val noon = Clock.fixed(Instant.parse("2026-10-21T12:00:00Z"), ZoneOffset.UTC)
   private val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
-  private val repository = TaskRepository(database.taskDao(), noon)
+  private val taskService = TaskService(database.taskDao(), noon)
 
   @After
   fun tearDown() {
@@ -42,9 +42,9 @@ class TaskListViewModelTest {
 
   @Test
   fun aTaskWhoseFireTimeHasPassed_isOverdue_andAFutureTaskIsNot() = runTest(testBody = { ->
-    repository.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
-    repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T13:00:00Z"))
-    val viewModel = TaskListViewModel(repository, noon)
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+    taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T13:00:00Z"))
+    val viewModel = TaskListViewModel(taskService, noon)
 
     val items = viewModel.uiState.first({ state -> state.items.size == 2 }).items
 
@@ -54,8 +54,8 @@ class TaskListViewModelTest {
   @Test
   fun whileTheListIsObserved_aTaskTurnsOverdueWithinAMinuteOfItsFireTime() = runTest(testBody = { ->
     val clock = SettableClock(Instant.parse("2026-10-21T12:00:00Z"))
-    repository.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:00:30Z"))
-    val viewModel = TaskListViewModel(repository, clock)
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:00:30Z"))
+    val viewModel = TaskListViewModel(taskService, clock)
     backgroundScope.launch(block = { -> viewModel.uiState.collect({ _ -> }) })
     val before = viewModel.uiState.first({ state -> state.items.isNotEmpty() }).items.single()
 
@@ -66,13 +66,4 @@ class TaskListViewModelTest {
     assertEquals(false, before.isOverdue)
     assertEquals(true, viewModel.uiState.value.items.single().isOverdue)
   })
-}
-
-/** A wall clock the test moves by hand, independent of the coroutine scheduler's virtual time. */
-private class SettableClock(var now: Instant) : Clock() {
-  override fun instant(): Instant = now
-
-  override fun getZone(): ZoneId = ZoneOffset.UTC
-
-  override fun withZone(zone: ZoneId?): Clock = this
 }

@@ -49,7 +49,7 @@ import java.time.ZoneOffset
 @Composable
 fun TaskFormRoute(taskId: Long?, onDone: () -> Unit, modifier: Modifier = Modifier) {
   val container = appContainerFrom(LocalContext.current)
-  val viewModel: TaskFormViewModel = viewModel(initializer = { -> TaskFormViewModel(container.taskRepository, container.clock, taskId) })
+  val viewModel: TaskFormViewModel = viewModel(initializer = { -> TaskFormViewModel(container.taskService, container.clock, taskId) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
 
   LaunchedEffect(state.isFinished, block = { -> if (state.isFinished) onDone() })

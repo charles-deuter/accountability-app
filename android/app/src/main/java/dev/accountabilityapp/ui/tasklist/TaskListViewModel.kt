@@ -2,7 +2,7 @@ package dev.accountabilityapp.ui.tasklist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.accountabilityapp.data.TaskRepository
+import dev.accountabilityapp.data.TaskService
 import dev.accountabilityapp.data.fireTimeOf
 import dev.accountabilityapp.data.isOverdue
 import java.time.Clock
@@ -21,7 +21,7 @@ data class TaskListItem(val id: Long, val title: String, val fireTime: Instant, 
 
 data class TaskListUiState(val items: List<TaskListItem> = emptyList())
 
-class TaskListViewModel(repository: TaskRepository, clock: Clock, tickInterval: Duration = 1.minutes) : ViewModel() {
+class TaskListViewModel(taskService: TaskService, clock: Clock, tickInterval: Duration = 1.minutes) : ViewModel() {
 
   /**
    * Re-evaluates Overdue on every Task change and on every tick. The tick only runs while the state is collected (the
@@ -29,7 +29,7 @@ class TaskListViewModel(repository: TaskRepository, clock: Clock, tickInterval: 
    */
   val uiState: StateFlow<TaskListUiState> =
     combine(
-        repository.observeTaskList(),
+        taskService.observeTaskList(),
         ticks(clock, tickInterval),
         transform = { tasks, now ->
           TaskListUiState(tasks.map({ task -> TaskListItem(task.id, task.title, fireTimeOf(task), isOverdue(task, now)) }))

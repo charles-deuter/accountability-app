@@ -4,7 +4,7 @@ import java.time.Clock
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 
-class TaskRepository(private val taskDao: TaskDao, private val clock: Clock) {
+class TaskService(private val taskDao: TaskDao, private val clock: Clock) {
 
   /** Tasks shown in the Task List. */
   fun observeTaskList(): Flow<List<Task>> = taskDao.observeTaskList()
