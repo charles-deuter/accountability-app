@@ -11,7 +11,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.SettableClock
 import dev.accountabilityapp.data.AppDatabase
+import dev.accountabilityapp.data.SnoozeDuration
 import dev.accountabilityapp.data.Task
+import dev.accountabilityapp.data.TaskStatus
+import dev.accountabilityapp.ui.reminder.ReminderActivity
 import java.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -93,7 +96,7 @@ class RemindersTest {
     for (reminder in reminders) {
       val ongoingFlag = reminder.flags and Notification.FLAG_ONGOING_EVENT
       assertTrue(ongoingFlag != 0)
-      assertEquals(listOf("Done"), reminder.actions.map({ action -> action.title.toString() }))
+      assertEquals(listOf("Done", "Snooze"), reminder.actions.map({ action -> action.title.toString() }))
     }
   })
 
@@ -118,6 +121,97 @@ class RemindersTest {
     assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
     assertEquals(emptyList<Task>(), taskService.observeTaskList().first())
     assertEquals(clock.now, taskService.findTask(medsId)?.completedAt)
+  })
+
+  @Test
+  fun snoozingAShowingReminder_clearsIt_recordsTheSnooze_andMovesTheAlarm() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+
+    taskService.snooze(medsId, SnoozeDuration.THIRTY_MINUTES)
+
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
+    val snoozed = taskService.findTask(medsId)!!
+    assertEquals(TaskStatus.SNOOZED, snoozed.status)
+    assertEquals(1, snoozed.snoozeCount)
+    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), snoozed.snoozedUntil)
+    assertEquals(listOf(Instant.parse("2026-10-24T13:30:00Z")), alarmTimes())
+  })
+
+  @Test
+  fun whenTheSnoozeRunsOut_theSameReminderAppearsAgain() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    taskService.snooze(medsId, SnoozeDuration.FIFTEEN_MINUTES)
+
+    fireTheAlarm()
+
+    assertEquals(Instant.parse("2026-10-24T13:15:00Z"), clock.now)
+    assertEquals(listOf("Take meds"), notificationManager.allNotifications.map(::titleOf))
+  })
+
+  @Test
+  fun editingASnoozedTask_endsTheSnooze_soItFiresAtTheNewTime() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    taskService.snooze(medsId, SnoozeDuration.ONE_DAY)
+
+    taskService.update(medsId, title = "Take meds", scheduledTime = Instant.parse("2026-10-24T18:00:00Z"))
+
+    assertEquals(listOf(Instant.parse("2026-10-24T18:00:00Z")), alarmTimes())
+    assertEquals(TaskStatus.PENDING, taskService.findTask(medsId)?.status)
+  })
+
+  @Test
+  fun aReminder_carriesAFullScreenIntentToTheTakeoverForItsTask() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+
+    fireTheAlarm()
+
+    val reminder = notificationManager.allNotifications.single()
+    val takeoverIntent = shadowOf(reminder.fullScreenIntent).savedIntent
+    assertEquals(ReminderActivity::class.java.name, takeoverIntent.component?.className)
+    assertEquals(medsId, takeoverIntent.getLongExtra(EXTRA_TASK_ID, -1))
+  })
+
+  @Test
+  fun swipingAReminderAway_snoozesItForThirtyMinutes() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    val reminder = notificationManager.allNotifications.single()
+
+    // What Android sends when the user swipes the notification away.
+    val swipeIntent = shadowOf(reminder.deleteIntent).savedIntent
+    handleReminderAction(swipeIntent, taskService)
+
+    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), taskService.findTask(medsId)?.snoozedUntil)
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
+  })
+
+  @Test
+  fun afterARestart_tasksThatCameDueAreReminded_completedOnesNever_andTheAlarmIsSetForTheNext() = runTest(testBody = { ->
+    // Written before the phone went off; the reboot erased their alarm and notifications.
+    val taskDao = database.taskDao()
+    val createdAt = Instant.parse("2026-10-24T08:00:00Z")
+    taskDao.insert(Task(title = "Missed while off", scheduledTime = Instant.parse("2026-10-24T11:00:00Z"), createdAt = createdAt))
+    taskDao.insert(snoozedTask("Snooze ran out while off", snoozedUntil = Instant.parse("2026-10-24T11:30:00Z")))
+    taskDao.insert(snoozedTask("Still snoozed", snoozedUntil = Instant.parse("2026-10-24T13:00:00Z")))
+    taskDao.insert(Task(title = "Later", scheduledTime = Instant.parse("2026-10-24T14:00:00Z"), createdAt = createdAt))
+    taskDao.insert(
+      Task(
+        title = "Already done",
+        scheduledTime = Instant.parse("2026-10-24T12:30:00Z"),
+        status = TaskStatus.COMPLETED,
+        completedAt = createdAt,
+        createdAt = createdAt,
+      )
+    )
+
+    container.reminderSync.sync()
+
+    val remindedTitles = notificationManager.allNotifications.map(::titleOf).toSet()
+    assertEquals(setOf("Missed while off", "Snooze ran out while off"), remindedTitles)
+    assertEquals(listOf(Instant.parse("2026-10-24T13:00:00Z")), alarmTimes())
   })
 
   @Test
@@ -151,5 +245,15 @@ class RemindersTest {
     container.reminderSync.sync()
   }
 }
+
+private fun snoozedTask(title: String, snoozedUntil: Instant): Task =
+  Task(
+    title = title,
+    scheduledTime = Instant.parse("2026-10-24T10:00:00Z"),
+    status = TaskStatus.SNOOZED,
+    snoozeCount = 1,
+    snoozedUntil = snoozedUntil,
+    createdAt = Instant.parse("2026-10-24T08:00:00Z"),
+  )
 
 private fun titleOf(notification: Notification): String = notification.extras.getCharSequence(Notification.EXTRA_TITLE).toString()

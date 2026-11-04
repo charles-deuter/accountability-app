@@ -10,7 +10,11 @@ import kotlinx.coroutines.flow.Flow
 interface TaskDao {
   @Insert suspend fun insert(task: Task): Long
 
-  @Query("SELECT * FROM tasks WHERE status != 'COMPLETED' ORDER BY scheduledTime")
+  /** Ordered by Fire time: the snoozed-until time while Snoozed, otherwise the scheduled time (see fireTimeOf). */
+  @Query(
+    "SELECT * FROM tasks WHERE status != 'COMPLETED' " +
+      "ORDER BY CASE WHEN status = 'SNOOZED' THEN snoozedUntil ELSE scheduledTime END"
+  )
   fun observeTaskList(): Flow<List<Task>>
 
   /** Every Task that isn't Completed: the ones that can still need a Reminder. */
@@ -20,11 +24,18 @@ interface TaskDao {
   @Query("SELECT * FROM tasks WHERE id = :taskId")
   suspend fun findTask(taskId: Long): Task?
 
-  @Query("UPDATE tasks SET title = :title, scheduledTime = :scheduledTime WHERE id = :taskId")
+  /** Editing picks a new time, so it ends any Snooze; the Snooze count stays as history. */
+  @Query(
+    "UPDATE tasks SET title = :title, scheduledTime = :scheduledTime, status = 'PENDING', snoozedUntil = NULL WHERE id = :taskId"
+  )
   suspend fun update(taskId: Long, title: String, scheduledTime: Instant)
 
   @Query("DELETE FROM tasks WHERE id = :taskId")
   suspend fun delete(taskId: Long)
+
+  /** One statement, so the count can't be lost between a read and a write. */
+  @Query("UPDATE tasks SET status = 'SNOOZED', snoozeCount = snoozeCount + 1, snoozedUntil = :snoozedUntil WHERE id = :taskId")
+  suspend fun markSnoozed(taskId: Long, snoozedUntil: Instant)
 
   @Query("UPDATE tasks SET status = 'COMPLETED', completedAt = :completedAt WHERE id = :taskId")
   suspend fun markCompleted(taskId: Long, completedAt: Instant)

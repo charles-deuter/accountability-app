@@ -2,7 +2,9 @@ package dev.accountabilityapp.ui.tasklist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.accountabilityapp.data.Task
 import dev.accountabilityapp.data.TaskService
+import dev.accountabilityapp.data.TaskStatus
 import dev.accountabilityapp.data.fireTimeOf
 import dev.accountabilityapp.data.isOverdue
 import java.time.Clock
@@ -17,7 +19,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 
-data class TaskListItem(val id: Long, val title: String, val fireTime: Instant, val isOverdue: Boolean)
+data class TaskListItem(
+  val id: Long,
+  val title: String,
+  val fireTime: Instant,
+  val isOverdue: Boolean,
+  val snoozeCount: Int = 0,
+  /** Set only while the Task is Snoozed. */
+  val snoozedUntil: Instant? = null,
+)
 
 data class TaskListUiState(val items: List<TaskListItem> = emptyList())
 
@@ -32,10 +42,23 @@ class TaskListViewModel(taskService: TaskService, clock: Clock, tickInterval: Du
         taskService.observeTaskList(),
         ticks(clock, tickInterval),
         transform = { tasks, now ->
-          TaskListUiState(tasks.map({ task -> TaskListItem(task.id, task.title, fireTimeOf(task), isOverdue(task, now)) }))
+          TaskListUiState(tasks.map({ task -> taskListItemOf(task, now) }))
         },
       )
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TaskListUiState())
+}
+
+private fun taskListItemOf(task: Task, now: Instant): TaskListItem {
+  val isSnoozed = task.status == TaskStatus.SNOOZED
+  val snoozedUntil = if (isSnoozed) task.snoozedUntil else null
+  return TaskListItem(
+    id = task.id,
+    title = task.title,
+    fireTime = fireTimeOf(task),
+    isOverdue = isOverdue(task, now),
+    snoozeCount = task.snoozeCount,
+    snoozedUntil = snoozedUntil,
+  )
 }
 
 /** Emits the current time immediately, then once per [interval]. */

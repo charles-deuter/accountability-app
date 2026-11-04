@@ -14,6 +14,8 @@ import dev.accountabilityapp.R
 import dev.accountabilityapp.data.Task
 import dev.accountabilityapp.data.fireTimeOf
 import dev.accountabilityapp.ui.formatTime
+import dev.accountabilityapp.ui.reminder.ReminderActivity
+import dev.accountabilityapp.ui.snooze.snoozePickerIntentFrom
 
 /** Reminders in the notification shade: one notification per due Task, keyed by the Task's id. */
 class ReminderNotifications(private val context: Context) {
@@ -40,7 +42,12 @@ class ReminderNotifications(private val context: Context) {
         .setAutoCancel(false)
         .setOnlyAlertOnce(true)
         .setContentIntent(openAppIntentFrom(context))
-        .addAction(0, context.getString(R.string.done), doneIntentFrom(context, task.id))
+        // On a locked phone this takes over the screen; on one in use, Android shows a heads-up instead.
+        .setFullScreenIntent(takeoverIntentFrom(context, task.id), true)
+        .addAction(0, context.getString(R.string.done), actionIntentFrom(context, ACTION_DONE, task.id))
+        .addAction(0, context.getString(R.string.snooze), snoozeIntentFrom(context, task.id))
+        // Android 14+ lets an unlocked user swipe even an ongoing notification away: that snoozes instead.
+        .setDeleteIntent(actionIntentFrom(context, ACTION_SWIPED, task.id))
         .build()
     notificationManager.notify(REMINDER_TAG, notificationIdOf(task.id), notification)
   }
@@ -77,8 +84,18 @@ private fun openAppIntentFrom(context: Context): PendingIntent {
   return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 }
 
-private fun doneIntentFrom(context: Context, taskId: Long): PendingIntent {
-  val intent = Intent(context, ReminderActionReceiver::class.java).setAction(ACTION_DONE).putExtra(EXTRA_TASK_ID, taskId)
-  // A distinct request code per Task, so each notification's Done carries its own Task id.
+private fun actionIntentFrom(context: Context, action: String, taskId: Long): PendingIntent {
+  val intent = Intent(context, ReminderActionReceiver::class.java).setAction(action).putExtra(EXTRA_TASK_ID, taskId)
+  // A distinct request code per Task, so each notification's intents carry its own Task id.
   return PendingIntent.getBroadcast(context, notificationIdOf(taskId), intent, PendingIntent.FLAG_IMMUTABLE)
+}
+
+private fun takeoverIntentFrom(context: Context, taskId: Long): PendingIntent {
+  val intent = Intent(context, ReminderActivity::class.java).putExtra(EXTRA_TASK_ID, taskId)
+  return PendingIntent.getActivity(context, notificationIdOf(taskId), intent, PendingIntent.FLAG_IMMUTABLE)
+}
+
+private fun snoozeIntentFrom(context: Context, taskId: Long): PendingIntent {
+  val intent = snoozePickerIntentFrom(context, taskId)
+  return PendingIntent.getActivity(context, notificationIdOf(taskId), intent, PendingIntent.FLAG_IMMUTABLE)
 }
