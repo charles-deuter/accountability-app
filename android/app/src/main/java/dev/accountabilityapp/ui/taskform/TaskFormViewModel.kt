@@ -2,7 +2,7 @@ package dev.accountabilityapp.ui.taskform
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.accountabilityapp.data.TaskRepository
+import dev.accountabilityapp.data.TaskService
 import java.time.Clock
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -23,7 +23,7 @@ data class TaskFormUiState(
 )
 
 /** Adds a new Task, or edits the existing one when [taskId] is given. */
-class TaskFormViewModel(private val repository: TaskRepository, clock: Clock, private val taskId: Long? = null) : ViewModel() {
+class TaskFormViewModel(private val taskService: TaskService, clock: Clock, private val taskId: Long? = null) : ViewModel() {
 
   private val isEditing = taskId != null
   private val _uiState = MutableStateFlow(TaskFormUiState(scheduledTime = nextFullHour(clock), isEditing = isEditing, isLoading = isEditing))
@@ -36,7 +36,7 @@ class TaskFormViewModel(private val repository: TaskRepository, clock: Clock, pr
   }
 
   private suspend fun loadForEditing(taskId: Long) {
-    val task = repository.findTask(taskId)
+    val task = taskService.findTask(taskId)
     if (task == null) {
       _uiState.update({ state -> state.copy(isLoading = false) })
       return
@@ -61,9 +61,9 @@ class TaskFormViewModel(private val repository: TaskRepository, clock: Clock, pr
     val title = form.title.trim()
     viewModelScope.launch(block = { ->
       if (taskId == null) {
-        repository.add(title = title, scheduledTime = form.scheduledTime)
+        taskService.add(title = title, scheduledTime = form.scheduledTime)
       } else {
-        repository.update(taskId, title = title, scheduledTime = form.scheduledTime)
+        taskService.update(taskId, title = title, scheduledTime = form.scheduledTime)
       }
       _uiState.update({ state -> state.copy(isFinished = true) })
     })
@@ -73,7 +73,7 @@ class TaskFormViewModel(private val repository: TaskRepository, clock: Clock, pr
   fun delete() {
     val editedTaskId = taskId ?: return
     viewModelScope.launch(block = { ->
-      repository.delete(editedTaskId)
+      taskService.delete(editedTaskId)
       _uiState.update({ state -> state.copy(isFinished = true) })
     })
   }

@@ -3,18 +3,39 @@ package dev.accountabilityapp
 import android.app.Application
 import android.content.Context
 import dev.accountabilityapp.data.AppDatabase
-import dev.accountabilityapp.data.TaskRepository
+import dev.accountabilityapp.data.TaskService
+import dev.accountabilityapp.reminders.ReminderAlarm
+import dev.accountabilityapp.reminders.ReminderNotifications
+import dev.accountabilityapp.reminders.ReminderSync
+import dev.accountabilityapp.reminders.createReminderChannel
 import java.time.Clock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class AccountabilityApplication : Application() {
   val container: AppContainer by lazy({ -> AppContainer(this) })
+
+  override fun onCreate() {
+    super.onCreate()
+    createReminderChannel(this)
+  }
 }
 
-/** App-wide singletons, built by hand: the app is small enough not to need a DI framework. */
-class AppContainer(context: Context) {
-  val clock: Clock = Clock.systemDefaultZone()
-  val database: AppDatabase = AppDatabase.open(context)
-  val taskRepository: TaskRepository = TaskRepository(database.taskDao(), clock)
+/**
+ * App-wide singletons, built by hand: the app is small enough not to need a DI framework. Tests pass their own [clock] and
+ * an in-memory [database] to run the real wiring.
+ */
+class AppContainer(
+  context: Context,
+  val clock: Clock = Clock.systemDefaultZone(),
+  val database: AppDatabase = AppDatabase.open(context),
+) {
+  /** For work that must outlive a screen, such as a broadcast receiver's database read. */
+  val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+  val reminderSync: ReminderSync =
+    ReminderSync(database.taskDao(), clock, ReminderAlarm(context), ReminderNotifications(context))
+  val taskService: TaskService = TaskService(database.taskDao(), clock, reminderSync)
 }
 
 /**

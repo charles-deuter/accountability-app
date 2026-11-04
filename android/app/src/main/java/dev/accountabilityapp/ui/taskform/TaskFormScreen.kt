@@ -1,5 +1,8 @@
 package dev.accountabilityapp.ui.taskform
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.accountabilityapp.R
 import dev.accountabilityapp.appContainerFrom
+import dev.accountabilityapp.reminders.isNotificationPermissionMissing
 import dev.accountabilityapp.ui.formatDate
 import dev.accountabilityapp.ui.formatTime
 import java.time.Instant
@@ -48,11 +52,22 @@ import java.time.ZoneOffset
 
 @Composable
 fun TaskFormRoute(taskId: Long?, onDone: () -> Unit, modifier: Modifier = Modifier) {
-  val container = appContainerFrom(LocalContext.current)
-  val viewModel: TaskFormViewModel = viewModel(initializer = { -> TaskFormViewModel(container.taskRepository, container.clock, taskId) })
+  val context = LocalContext.current
+  val container = appContainerFrom(context)
+  val viewModel: TaskFormViewModel = viewModel(initializer = { -> TaskFormViewModel(container.taskService, container.clock, taskId) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
 
   LaunchedEffect(state.isFinished, block = { -> if (state.isFinished) onDone() })
+
+  // Ask for notifications (Android 13+) as the user starts on a Reminder, so the first one can actually ring. If they
+  // decline, the Task still saves; ticket 11 shows a warning while the permission is missing.
+  val notificationPermissionRequest =
+    rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission(), onResult = { _ -> })
+  LaunchedEffect(Unit, block = { ->
+    if (isNotificationPermissionMissing(context)) {
+      notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+  })
 
   TaskFormScreen(
     state = state,

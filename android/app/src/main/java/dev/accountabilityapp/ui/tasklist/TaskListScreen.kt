@@ -37,7 +37,7 @@ import java.time.Instant
 @Composable
 fun TaskListRoute(onAddTask: () -> Unit, onEditTask: (taskId: Long) -> Unit, modifier: Modifier = Modifier) {
   val container = appContainerFrom(LocalContext.current)
-  val viewModel: TaskListViewModel = viewModel(initializer = { -> TaskListViewModel(container.taskRepository, container.clock) })
+  val viewModel: TaskListViewModel = viewModel(initializer = { -> TaskListViewModel(container.taskService, container.clock) })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
   TaskListScreen(state = state, onAddTask = onAddTask, onEditTask = onEditTask, modifier = modifier)
 }

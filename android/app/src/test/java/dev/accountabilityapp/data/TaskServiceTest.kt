@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.accountabilityapp.AppContainer
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -16,17 +17,17 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class TaskRepositoryTest {
+class TaskServiceTest {
 
   private val context: Context = ApplicationProvider.getApplicationContext()
   private val clock = Clock.fixed(Instant.parse("2026-10-21T12:00:00Z"), ZoneOffset.UTC)
   private lateinit var database: AppDatabase
-  private lateinit var repository: TaskRepository
+  private lateinit var taskService: TaskService
 
   @Before
   fun setUp() {
     database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
-    repository = TaskRepository(database.taskDao(), clock)
+    taskService = AppContainer(context, clock = clock, database = database).taskService
   }
 
   @After
@@ -36,9 +37,9 @@ class TaskRepositoryTest {
 
   @Test
   fun addedTask_appearsInTheTaskList() = runTest(testBody = { ->
-    repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
+    taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
 
-    val taskList = repository.observeTaskList().first()
+    val taskList = taskService.observeTaskList().first()
 
     assertEquals(listOf("Call dentist"), taskList.map({ task -> task.title }))
     assertEquals(Instant.parse("2026-10-22T09:00:00Z"), taskList.single().scheduledTime)
@@ -46,32 +47,32 @@ class TaskRepositoryTest {
 
   @Test
   fun taskList_isOrderedByFireTime_notByWhenTasksWereAdded() = runTest(testBody = { ->
-    repository.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
-    repository.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T09:00:00Z"))
-    repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T15:00:00Z"))
+    taskService.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T09:00:00Z"))
+    taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T15:00:00Z"))
 
-    val titles = repository.observeTaskList().first().map({ task -> task.title })
+    val titles = taskService.observeTaskList().first().map({ task -> task.title })
 
     assertEquals(listOf("Take meds", "Call dentist", "Pay rent"), titles)
   })
 
   @Test
   fun completedTask_leavesTheTaskList() = runTest(testBody = { ->
-    val dentistId = repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
-    repository.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
+    val dentistId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
+    taskService.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
 
-    repository.complete(dentistId)
+    taskService.complete(dentistId)
 
-    assertEquals(listOf("Pay rent"), repository.observeTaskList().first().map({ task -> task.title }))
+    assertEquals(listOf("Pay rent"), taskService.observeTaskList().first().map({ task -> task.title }))
   })
 
   @Test
   fun editedTask_changesInPlace_ratherThanAddingANewOne() = runTest(testBody = { ->
-    val taskId = repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
 
-    repository.update(taskId, title = "Call the dentist back", scheduledTime = Instant.parse("2026-10-23T14:00:00Z"))
+    taskService.update(taskId, title = "Call the dentist back", scheduledTime = Instant.parse("2026-10-23T14:00:00Z"))
 
-    val edited = repository.observeTaskList().first().single()
+    val edited = taskService.observeTaskList().first().single()
     assertEquals(taskId, edited.id)
     assertEquals("Call the dentist back", edited.title)
     assertEquals(Instant.parse("2026-10-23T14:00:00Z"), edited.scheduledTime)
@@ -79,12 +80,12 @@ class TaskRepositoryTest {
 
   @Test
   fun deletedTask_leavesTheTaskList() = runTest(testBody = { ->
-    val dentistId = repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
-    repository.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
+    val dentistId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
+    taskService.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
 
-    repository.delete(dentistId)
+    taskService.delete(dentistId)
 
-    assertEquals(listOf("Pay rent"), repository.observeTaskList().first().map({ task -> task.title }))
+    assertEquals(listOf("Pay rent"), taskService.observeTaskList().first().map({ task -> task.title }))
   })
 
   @Test
@@ -92,11 +93,11 @@ class TaskRepositoryTest {
     val fileName = "restart-test.db"
     context.deleteDatabase(fileName)
     val firstLaunch = AppDatabase.open(context, fileName)
-    TaskRepository(firstLaunch.taskDao(), clock).add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
+    AppContainer(context, clock = clock, database = firstLaunch).taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
     firstLaunch.close()
 
     val secondLaunch = AppDatabase.open(context, fileName)
-    val titles = TaskRepository(secondLaunch.taskDao(), clock).observeTaskList().first().map({ task -> task.title })
+    val titles = AppContainer(context, clock = clock, database = secondLaunch).taskService.observeTaskList().first().map({ task -> task.title })
     secondLaunch.close()
 
     assertEquals(listOf("Call dentist"), titles)

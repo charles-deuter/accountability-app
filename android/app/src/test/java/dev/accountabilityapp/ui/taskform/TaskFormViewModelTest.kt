@@ -4,9 +4,9 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.MainDispatcherRule
 import dev.accountabilityapp.data.AppDatabase
-import dev.accountabilityapp.data.TaskRepository
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -27,7 +27,7 @@ class TaskFormViewModelTest {
   private val context: Context = ApplicationProvider.getApplicationContext()
   private val clock = Clock.fixed(Instant.parse("2026-10-21T12:00:00Z"), ZoneOffset.UTC)
   private val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
-  private val repository = TaskRepository(database.taskDao(), clock)
+  private val taskService = AppContainer(context, clock = clock, database = database).taskService
 
   @After
   fun tearDown() {
@@ -36,34 +36,34 @@ class TaskFormViewModelTest {
 
   @Test
   fun savingABlankTitle_showsTitleRequired_andSavesNothing() = runTest(testBody = { ->
-    val viewModel = TaskFormViewModel(repository, clock)
+    val viewModel = TaskFormViewModel(taskService, clock)
 
     viewModel.onTitleChange("   ")
     viewModel.save()
 
     assertTrue(viewModel.uiState.value.showTitleRequired)
-    assertEquals(emptyList<String>(), repository.observeTaskList().first().map({ task -> task.title }))
+    assertEquals(emptyList<String>(), taskService.observeTaskList().first().map({ task -> task.title }))
   })
 
   @Test
   fun savingATitleAndTime_addsTheTask_andFinishes() = runTest(testBody = { ->
-    val viewModel = TaskFormViewModel(repository, clock)
+    val viewModel = TaskFormViewModel(taskService, clock)
 
     viewModel.onTitleChange("Call dentist")
     viewModel.onScheduledTimeChange(Instant.parse("2026-10-23T15:30:00Z"))
     viewModel.save()
 
     viewModel.uiState.first({ state -> state.isFinished })
-    val saved = repository.observeTaskList().first().single()
+    val saved = taskService.observeTaskList().first().single()
     assertEquals("Call dentist", saved.title)
     assertEquals(Instant.parse("2026-10-23T15:30:00Z"), saved.scheduledTime)
   })
 
   @Test
   fun editingATask_startsPrefilledWithItsTitleAndTime() = runTest(testBody = { ->
-    val taskId = repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-23T15:30:00Z"))
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-23T15:30:00Z"))
 
-    val viewModel = TaskFormViewModel(repository, clock, taskId = taskId)
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
 
     val form = viewModel.uiState.first({ state -> !state.isLoading })
     assertEquals("Call dentist", form.title)
@@ -72,8 +72,8 @@ class TaskFormViewModelTest {
 
   @Test
   fun savingAnEdit_updatesTheTask_insteadOfAddingOne() = runTest(testBody = { ->
-    val taskId = repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-23T15:30:00Z"))
-    val viewModel = TaskFormViewModel(repository, clock, taskId = taskId)
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-23T15:30:00Z"))
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
     viewModel.uiState.first({ state -> !state.isLoading })
 
     viewModel.onTitleChange("Call the dentist back")
@@ -81,7 +81,7 @@ class TaskFormViewModelTest {
     viewModel.save()
 
     viewModel.uiState.first({ state -> state.isFinished })
-    val saved = repository.observeTaskList().first().single()
+    val saved = taskService.observeTaskList().first().single()
     assertEquals(taskId, saved.id)
     assertEquals("Call the dentist back", saved.title)
     assertEquals(Instant.parse("2026-10-24T10:00:00Z"), saved.scheduledTime)
@@ -89,13 +89,13 @@ class TaskFormViewModelTest {
 
   @Test
   fun deletingATask_removesIt_andFinishes() = runTest(testBody = { ->
-    val taskId = repository.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-23T15:30:00Z"))
-    val viewModel = TaskFormViewModel(repository, clock, taskId = taskId)
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-23T15:30:00Z"))
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
     viewModel.uiState.first({ state -> !state.isLoading })
 
     viewModel.delete()
 
     viewModel.uiState.first({ state -> state.isFinished })
-    assertEquals(emptyList<String>(), repository.observeTaskList().first().map({ task -> task.title }))
+    assertEquals(emptyList<String>(), taskService.observeTaskList().first().map({ task -> task.title }))
   })
 }

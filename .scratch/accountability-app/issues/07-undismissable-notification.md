@@ -4,7 +4,7 @@
 
 **Blocked by:** 06
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 Design notes:
 
@@ -14,11 +14,20 @@ Design notes:
 - **Use `setExactAndAllowWhileIdle()`**, which fires on time even in Doze (the phone's deep idle state: screen off, unplugged, stationary). Its known limit, per Google's docs: while the phone is in Doze it "cannot fire alarms more than once per nine minutes, per app". Two reminders 1–8 minutes apart during deep Doze can see the second arrive up to ~9 minutes late, at full intrusiveness. Accepted for v1; ticket 12 measures it on the real phone.
 - **`setAlarmClock()` was considered and rejected for v1.** It is never delayed, but it lights the system-wide alarm icon whenever any alarm is pending (effectively always, with recurring reminders), shows reminder times as the phone's "next alarm" on the lock screen and clock widgets ahead of the user's real wake-up alarm, and can end a Do Not Disturb schedule early via "Alarm can override end time". If ticket 12 shows the Doze delay matters in practice, later options are: switch to `setAlarmClock()` only for a reminder within nine minutes of the previous one, or a "Strict timing (shows alarm icon)" setting.
 
-- [ ] An alarm-importance notification channel is created at app startup, with sound and vibration on
-- [ ] Saving, editing, and deleting a task recompute the single next alarm with `setExactAndAllowWhileIdle()`; with no pending tasks, no alarm is set
-- [ ] When the alarm fires, every task due at that moment gets its own ongoing (non-swipeable) notification with the task title and a Done action, and the next alarm is scheduled
-- [ ] Done marks the task completed (sets completedAt), cancels the notification, and the task leaves the Task List
-- [ ] The app requests the notifications permission on Android 13+ before the first reminder is saved
-- [ ] Integration tests through the scheduling abstraction cover: save, edit, and delete each recompute the next alarm; two tasks at the same time produce one alarm and two notifications; firing schedules the following alarm
-- [ ] Unit test covers the Done transition (pending → completed)
-- [ ] Manual smoke on the emulator: a reminder set one minute out fires and Done clears it; repeat with the emulator forced into Doze (`adb shell dumpsys deviceidle force-idle`) and confirm it still fires on time
+- [x] An alarm-importance notification channel is created at app startup, with sound and vibration on
+- [x] Saving, editing, and deleting a task recompute the single next alarm with `setExactAndAllowWhileIdle()`; with no pending tasks, no alarm is set
+- [x] When the alarm fires, every task due at that moment gets its own ongoing (non-swipeable) notification with the task title and a Done action, and the next alarm is scheduled
+- [x] Done marks the task completed (sets completedAt), cancels the notification, and the task leaves the Task List
+- [x] The app requests the notifications permission on Android 13+ before the first reminder is saved
+- [x] Integration tests through the scheduling abstraction cover: save, edit, and delete each recompute the next alarm; two tasks at the same time produce one alarm and two notifications; firing schedules the following alarm
+- [x] Unit test covers the Done transition (pending → completed)
+- [x] Manual smoke on the emulator: a reminder set one minute out fires and Done clears it; repeat with the emulator forced into Doze (`adb shell dumpsys deviceidle force-idle`) and confirm it still fires on time
+
+## Comments
+
+**2026-10-24, agent:** Done in PR #8.
+- **Design:** one `ReminderSync.sync()` that every trigger calls. It posts a Reminder for each due Task not already in the shade, cancels shown Reminders whose Task is no longer due, and sets the one alarm to the next future Fire time (or cancels it). `TaskService` (renamed from `TaskRepository`) runs it after every write; the alarm receiver runs it when the alarm fires; the Done receiver completes the Task, whose sync clears the Reminder.
+- **Exact-alarm permission:** not pre-granted from Android 14. Without it, `ReminderAlarm` falls back to `setAndAllowWhileIdle` (inexact, may be minutes late) instead of throwing. Ticket 11 asks the user for it.
+- **Notifications permission:** asked for when the Task Form opens (not on Save, so it never collides with title validation).
+- **Smoke, emulator API 37:** with the app process killed, a 3:15 Reminder fired at 3:15:00 and started the app; Done cleared it and the Task left the list. Repeated in forced deep Doze (screen off, unplugged, `IDLE`): the 3:20 Reminder fired at 3:20:00.
+- **Known gap, fixed in ticket 08:** since Android 14, an unlocked user can swipe away an ongoing notification. Ticket 08 makes a swipe snooze the Reminder for 30 minutes.
