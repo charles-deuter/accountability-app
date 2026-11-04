@@ -3,11 +3,14 @@ package dev.accountabilityapp
 import android.Manifest
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.accountabilityapp.reminders.RescheduleReceiver
 import dev.accountabilityapp.ui.reminder.ReminderActivity
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,6 +30,29 @@ class ManifestTest {
 
     assertTrue(hasFlag(takeover, hiddenActivityFlagOf("FLAG_SHOW_WHEN_LOCKED")))
     assertTrue(hasFlag(takeover, hiddenActivityFlagOf("FLAG_TURN_SCREEN_ON")))
+  }
+
+  @Test
+  fun bootClockChangesAndAppUpdates_allReachTheRescheduleReceiver() {
+    val systemEvents =
+      listOf(
+        Intent.ACTION_BOOT_COMPLETED,
+        Intent.ACTION_TIME_CHANGED,
+        Intent.ACTION_TIMEZONE_CHANGED,
+        Intent.ACTION_MY_PACKAGE_REPLACED,
+      )
+
+    for (action in systemEvents) {
+      val intent = Intent(action).setPackage(context.packageName)
+      val receivers = context.packageManager.queryBroadcastReceivers(intent, 0)
+      val receiverNames = receivers.map({ receiver -> receiver.activityInfo.name })
+      assertEquals(action, listOf(RescheduleReceiver::class.java.name), receiverNames)
+    }
+  }
+
+  @Test
+  fun theAppMayRunAtBoot() {
+    assertTrue(Manifest.permission.RECEIVE_BOOT_COMPLETED in requestedPermissionsOf(context))
   }
 
   @Test
