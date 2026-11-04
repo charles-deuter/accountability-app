@@ -5,10 +5,12 @@ import dev.accountabilityapp.data.TaskDao
 import dev.accountabilityapp.data.fireTimeOf
 import java.time.Clock
 import java.time.Instant
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Brings the system's reminder state in line with the database. Every trigger calls [sync]: a Task change, the alarm
- * firing, and (ticket 10) boot, clock changes and app launch. Because it recomputes everything from the database, no
+ * firing, boot, clock changes, an app update, and app launch. Because it recomputes everything from the database, no
  * caller has to know what the previous alarm was.
  */
 class ReminderSync(
@@ -18,7 +20,14 @@ class ReminderSync(
   private val notifications: ReminderNotifications,
 ) {
 
+  /** Triggers can overlap (a launch while a receiver runs), so one sync at a time: two can't both post a Reminder. */
+  private val mutex = Mutex()
+
   suspend fun sync() {
+    mutex.withLock(action = { -> syncNow() })
+  }
+
+  private suspend fun syncNow() {
     val now = clock.instant()
     val openTasks = taskDao.findOpenTasks()
 

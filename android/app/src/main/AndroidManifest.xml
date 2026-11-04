@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <!-- Android 13+: asked for when the user opens the Task Form. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The lock-screen takeover. Android 14+ asks the user for it (ticket 11); Play requires a declaration (ticket 21). -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Alarms don't survive a reboot; this lets the app set the next one again. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".AccountabilityApplication"
@@ -24,11 +28,21 @@
             </intent-filter>
         </activity>
 
+        <!-- The lock-screen takeover: shows without unlocking and wakes the screen, like an incoming call. -->
+        <activity
+            android:name=".ui.reminder.ReminderActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:turnScreenOn="true" />
+
         <!-- Its own empty task affinity, so finishing returns to whatever app the user was in, not to ours. -->
         <activity
             android:name=".ui.snooze.SnoozeActivity"
             android:excludeFromRecents="true"
             android:exported="false"
+            android:showWhenLocked="true"
             android:taskAffinity=""
             android:theme="@style/Theme.AccountabilityApp.Translucent" />
 
@@ -39,6 +53,18 @@
         <receiver
             android:name=".reminders.ReminderActionReceiver"
             android:exported="false" />
+
+        <!-- Not exported: these are system broadcasts, which reach the app's own receivers regardless. -->
+        <receiver
+            android:name=".reminders.RescheduleReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
