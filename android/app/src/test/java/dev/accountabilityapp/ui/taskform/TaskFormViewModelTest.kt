@@ -1,5 +1,7 @@
 package dev.accountabilityapp.ui.taskform
 
+import android.app.Notification
+import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -7,6 +9,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.MainDispatcherRule
 import dev.accountabilityapp.data.AppDatabase
+import dev.accountabilityapp.data.SnoozeDuration
+import dev.accountabilityapp.data.TaskStatus
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -18,6 +22,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class TaskFormViewModelTest {
@@ -85,6 +90,55 @@ class TaskFormViewModelTest {
     assertEquals(taskId, saved.id)
     assertEquals("Call the dentist back", saved.title)
     assertEquals(Instant.parse("2026-10-24T10:00:00Z"), saved.scheduledTime)
+  })
+
+  @Test
+  fun editingASnoozedTask_showsItsFireTime() = runTest(testBody = { ->
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
+
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
+
+    val form = viewModel.uiState.first({ state -> !state.isLoading })
+    assertEquals(Instant.parse("2026-10-21T13:00:00Z"), form.scheduledTime)
+  })
+
+  @Test
+  fun savingANewTitleOnASnoozedTask_keepsTheSnooze() = runTest(testBody = { ->
+    val taskId = taskService.add(title = "Cal dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
+    viewModel.uiState.first({ state -> !state.isLoading })
+
+    viewModel.onTitleChange("Call dentist")
+    viewModel.save()
+
+    viewModel.uiState.first({ state -> state.isFinished })
+    val saved = taskService.findTask(taskId)!!
+    assertEquals("Call dentist", saved.title)
+    assertEquals(TaskStatus.SNOOZED, saved.status)
+    assertEquals(Instant.parse("2026-10-21T13:00:00Z"), saved.snoozedUntil)
+    assertEquals(1, saved.snoozeCount)
+    // The original time has passed, so ending the Snooze here would ring the Reminder straight away.
+    val notificationManager = shadowOf(context.getSystemService(NotificationManager::class.java))
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
+  })
+
+  @Test
+  fun savingANewTimeOnASnoozedTask_endsTheSnooze() = runTest(testBody = { ->
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
+    viewModel.uiState.first({ state -> !state.isLoading })
+
+    viewModel.onScheduledTimeChange(Instant.parse("2026-10-21T18:00:00Z"))
+    viewModel.save()
+
+    viewModel.uiState.first({ state -> state.isFinished })
+    val saved = taskService.findTask(taskId)!!
+    assertEquals(TaskStatus.PENDING, saved.status)
+    assertEquals(Instant.parse("2026-10-21T18:00:00Z"), saved.scheduledTime)
+    assertEquals(1, saved.snoozeCount)
   })
 
   @Test
