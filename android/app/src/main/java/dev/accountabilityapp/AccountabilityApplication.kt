@@ -7,7 +7,7 @@ import dev.accountabilityapp.data.TaskService
 import dev.accountabilityapp.reminders.ReminderAlarm
 import dev.accountabilityapp.reminders.ReminderNotifications
 import dev.accountabilityapp.reminders.ReminderSync
-import dev.accountabilityapp.reminders.createReminderChannel
+import dev.accountabilityapp.reminders.createReminderChannels
 import java.time.Clock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +18,7 @@ class AccountabilityApplication : Application() {
 
   override fun onCreate() {
     super.onCreate()
-    createReminderChannel(this)
+    createReminderChannels(this)
   }
 }
 

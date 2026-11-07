@@ -21,6 +21,11 @@ class SnoozeViewModel(private val taskService: TaskService, private val taskId: 
   /** Set by the first choice, so leaving the screen afterwards doesn't snooze a second time. */
   private var hasSnoozed = false
 
+  init {
+    // Opening the picker is a response: the sound stops now, not once they've chosen.
+    viewModelScope.launch(block = { -> taskService.silence(taskId) })
+  }
+
   fun snooze(duration: SnoozeDuration) {
     if (hasSnoozed) return
     hasSnoozed = true

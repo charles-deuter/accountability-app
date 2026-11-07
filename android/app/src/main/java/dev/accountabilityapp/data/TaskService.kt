@@ -29,6 +29,11 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
     reminderSync.sync()
   }
 
+  /** The user responded to the Reminder: it stops ringing and stays in the shade. The Task itself doesn't change. */
+  suspend fun silence(taskId: Long) {
+    reminderSync.silence(taskId)
+  }
+
   suspend fun snooze(taskId: Long, duration: SnoozeDuration) {
     taskDao.markSnoozed(taskId, snoozedUntil = snoozedUntilOf(duration, clock.instant()))
     reminderSync.sync()

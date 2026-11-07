@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
 Found in QA on 2026-11-06. Swiping away the heads-up left the alarm playing with no end, and the sound carried on behind the Snooze picker.
 
@@ -19,14 +19,29 @@ Design notes:
 - **Channel settings are permanent on a device:** changing the channel's sound means a new channel id.
 - **The 5-minute limit** must survive the process dying. Doze may delay it, so "about 5 minutes" is fine while the phone is idle.
 
-- [ ] Done stops the ringing
-- [ ] Opening the Snooze picker stops the ringing before anything is picked, from both the notification and the takeover
-- [ ] Swiping the Reminder out of the shade stops the ringing and still snoozes for 30 minutes
-- [ ] Leaving the takeover (Home, Back, power button) stops the ringing, keeps the Reminder in the shade, and applies no Snooze
-- [ ] With no response, the ringing stops after 5 minutes and the Reminder stays in the shade with Done and Snooze
-- [ ] Vibration stops whenever the sound does
-- [ ] A silenced Reminder doesn't ring or reopen the takeover on a later sync or app launch
-- [ ] A Reminder returning from a Snooze rings normally
-- [ ] Silencing one of two showing Reminders doesn't remove the other
-- [ ] Tests cover each stop trigger and the silent repost or its equivalent, through the reminder seam (Robolectric)
+- [x] Done stops the ringing
+- [x] Opening the Snooze picker stops the ringing before anything is picked, from both the notification and the takeover
+- [x] Swiping the Reminder out of the shade stops the ringing and still snoozes for 30 minutes
+- [x] Leaving the takeover (Home, Back, power button) stops the ringing, keeps the Reminder in the shade, and applies no Snooze
+- [x] With no response, the ringing stops after 5 minutes and the Reminder stays in the shade with Done and Snooze
+- [x] Vibration stops whenever the sound does
+- [x] A silenced Reminder doesn't ring or reopen the takeover on a later sync or app launch
+- [x] A Reminder returning from a Snooze rings normally
+- [x] Silencing one of two showing Reminders doesn't remove the other
+- [x] Tests cover each stop trigger and the silent repost or its equivalent, through the reminder seam (Robolectric)
 - [ ] Charlie confirms on the Pixel: every trigger above, including what a heads-up swipe does
+
+## Comments
+
+**2026-11-06, agent:** Code done. The last criterion is waiting on Charlie and the unlocked Pixel.
+- **Mechanism:** a new silent channel, `reminders_silenced`, at default importance, so the Reminder stays with the alerting notifications. Silencing replaces the notification in place on that channel with no full-screen intent. No foreground service.
+- **Not cancel-then-post, as the design notes first suggested.** Android applies these calls asynchronously, so a sync straight after could find the Reminder missing and post it again, ringing. Replacing in place has no such gap, and the Pixel confirms it stops the sound.
+- **The 5-minute limit** needs no schema change and survives the process dying. The notification's `when` records when ringing began, and the app's one alarm is set for whichever comes first: the next Fire time or the soonest ring deadline.
+- **The takeover keeps the screen on and closes at the limit.** The first version didn't, and the 30-second screen timeout counted as leaving: an unattended locked Pixel went quiet after about 35 seconds.
+- **Triggers:** opening the Snooze picker silences from its ViewModel, and leaving the takeover from `onStop`, except rotation. Done and swiping out of the shade already removed the notification.
+- **Proved on the locked Pixel 10a (Android 17),** reading the alarm player from `dumpsys audio`: Back, Home, power, Done and Snooze on the takeover each stop the sound; the Reminder stays on the silent channel except after Done; the alarm is set 5 minutes after firing. With no response the sound stopped at about 5 minutes, but that run predates the in-place change, and its takeover timer could have ended it.
+- **Not yet proved on the Pixel, because they need it unlocked:** heads-up swipe, swiping out of the shade, Snooze from the notification, the 5-minute limit with no takeover, and vibration.
+- **Behaviour to know:**
+  - Tapping the notification body opens the app and doesn't silence, because it wasn't one of the agreed triggers.
+  - A reboot clears notifications, so a silenced Reminder rings again afterwards.
+  - A second Reminder's takeover closing the first's counts as leaving, so the first goes silent while the second rings.
