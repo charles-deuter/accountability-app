@@ -5,6 +5,8 @@ import dev.accountabilityapp.data.TaskDao
 import dev.accountabilityapp.data.fireTimeOf
 import java.time.Clock
 import java.time.Instant
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.toJavaDuration
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -27,6 +29,17 @@ class ReminderSync(
     mutex.withLock(action = { -> syncNow() })
   }
 
+  /** Stops one showing Reminder ringing. Does nothing if it isn't showing or is already silent. */
+  suspend fun silence(taskId: Long) {
+    mutex.withLock(action = { ->
+      val task = taskDao.findTask(taskId)
+      if (task != null) {
+        notifications.silence(task)
+      }
+      syncNow()
+    })
+  }
+
   private suspend fun syncNow() {
     val now = clock.instant()
     val openTasks = taskDao.findOpenTasks()
@@ -34,10 +47,9 @@ class ReminderSync(
     // Only Tasks not already in the shade are posted, so a Reminder that is showing never rings twice.
     val shownTaskIds = notifications.shownTaskIds()
     val dueTasks = openTasks.filter({ task -> isDue(task, now) })
-    for (task in dueTasks) {
-      if (task.id !in shownTaskIds) {
-        notifications.show(task)
-      }
+    val newTasks = dueTasks.filter({ task -> task.id !in shownTaskIds })
+    for (task in newTasks) {
+      notifications.show(task, ringingSince = now)
     }
     // A shown Reminder whose Task is no longer due (completed, deleted, or moved later) leaves the shade.
     val dueTaskIds = dueTasks.map({ task -> task.id }).toSet()
@@ -47,19 +59,38 @@ class ReminderSync(
       }
     }
 
-    val nextFireTime = nextFireTimeOf(openTasks, now)
-    if (nextFireTime == null) {
+    // A Reminder nobody has responded to stops ringing at its limit. It stays in the shade, because it can't be dismissed.
+    // Android posts asynchronously, so the Reminders just shown may not be readable yet and are added by hand.
+    val newTasksRingingSince = newTasks.associate({ task -> task.id to now })
+    val ringingSince = notifications.readRingingSince() + newTasksRingingSince
+    val ringDeadlines = ringingSince.mapValues({ (_, startedAt) -> ringDeadlineOf(startedAt) })
+    for (task in dueTasks) {
+      val ringDeadline = ringDeadlines[task.id] ?: continue
+      val hasRungLongEnough = !ringDeadline.isAfter(now)
+      if (hasRungLongEnough) {
+        notifications.silence(task)
+      }
+    }
+
+    val nextAlarmTime = nextAlarmTimeOf(openTasks, ringDeadlines.values, now)
+    if (nextAlarmTime == null) {
       alarm.cancel()
     } else {
-      alarm.scheduleAt(nextFireTime)
+      alarm.scheduleAt(nextAlarmTime)
     }
   }
 }
 
+/** How long a Reminder rings with no response. Doze may stretch this while the phone is idle. */
+val RING_LIMIT = 5.minutes
+
+private fun ringDeadlineOf(ringingSince: Instant): Instant = ringingSince.plus(RING_LIMIT.toJavaDuration())
+
 private fun isDue(task: Task, now: Instant): Boolean = !fireTimeOf(task).isAfter(now)
 
-/** The soonest Fire time still in the future, or null when there is nothing left to remind about. */
-private fun nextFireTimeOf(openTasks: List<Task>, now: Instant): Instant? {
-  val futureFireTimes = openTasks.map(::fireTimeOf).filter({ fireTime -> fireTime.isAfter(now) })
-  return futureFireTimes.minOrNull()
+/** The soonest moment still in the future when a Reminder must start or stop ringing, or null when there is none. */
+private fun nextAlarmTimeOf(openTasks: List<Task>, ringDeadlines: Collection<Instant>, now: Instant): Instant? {
+  val alarmTimes = openTasks.map(::fireTimeOf) + ringDeadlines
+  val futureAlarmTimes = alarmTimes.filter({ alarmTime -> alarmTime.isAfter(now) })
+  return futureAlarmTimes.minOrNull()
 }

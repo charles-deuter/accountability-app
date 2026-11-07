@@ -8,8 +8,9 @@ import android.os.Build
 import java.time.Instant
 
 /**
- * The app's one AlarmManager alarm. Only the soonest Fire time has an alarm; when it fires, [ReminderSync] sets it again
- * for the next one. Setting it replaces the previous alarm, because both use the same PendingIntent.
+ * The app's one AlarmManager alarm, set for the soonest moment a Reminder must start or stop ringing; when it fires,
+ * [ReminderSync] sets it again for the next one. Setting it replaces the previous alarm, because both use the same
+ * PendingIntent.
  */
 class ReminderAlarm(private val context: Context) {
 

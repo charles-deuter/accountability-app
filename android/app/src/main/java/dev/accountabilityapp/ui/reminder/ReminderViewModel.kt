@@ -3,6 +3,8 @@ package dev.accountabilityapp.ui.reminder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.accountabilityapp.data.TaskService
+import dev.accountabilityapp.reminders.RING_LIMIT
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +21,11 @@ class ReminderViewModel(private val taskService: TaskService, private val taskId
 
   init {
     viewModelScope.launch(block = { -> loadTitle() })
+    // The takeover keeps the screen on, so it has to let go once the ringing is over.
+    viewModelScope.launch(block = { ->
+      delay(RING_LIMIT)
+      _uiState.update({ state -> state.copy(isFinished = true) })
+    })
   }
 
   private suspend fun loadTitle() {
