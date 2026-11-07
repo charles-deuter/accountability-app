@@ -3,6 +3,7 @@ package dev.accountabilityapp.data
 import dev.accountabilityapp.reminders.ReminderSync
 import java.time.Clock
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.Flow
 
 /** Task operations. Each write is followed by a [ReminderSync], so the alarm and notifications follow the database. */
@@ -19,8 +20,17 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
     return taskId
   }
 
+  /**
+   * The Task Form shows a Task's Fire time, so a [scheduledTime] that matches it means the user left the time alone: the
+   * Task keeps its Snooze. Any other time ends the Snooze.
+   */
   suspend fun update(taskId: Long, title: String, scheduledTime: Instant) {
-    taskDao.update(taskId, title, scheduledTime)
+    val task = taskDao.findTask(taskId) ?: return
+    if (isSameMinute(scheduledTime, fireTimeOf(task))) {
+      taskDao.rename(taskId, title)
+    } else {
+      taskDao.update(taskId, title, scheduledTime)
+    }
     reminderSync.sync()
   }
 
@@ -44,3 +54,7 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
     reminderSync.sync()
   }
 }
+
+/** The time picker works in whole minutes while a snoozed-until time has seconds, so confirming it unchanged drops them. */
+private fun isSameMinute(first: Instant, second: Instant): Boolean =
+  first.truncatedTo(ChronoUnit.MINUTES) == second.truncatedTo(ChronoUnit.MINUTES)

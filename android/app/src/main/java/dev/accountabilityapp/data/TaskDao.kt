@@ -24,11 +24,14 @@ interface TaskDao {
   @Query("SELECT * FROM tasks WHERE id = :taskId")
   suspend fun findTask(taskId: Long): Task?
 
-  /** Editing picks a new time, so it ends any Snooze; the Snooze count stays as history. */
+  /** Picking a new time ends any Snooze; the Snooze count stays as history. */
   @Query(
     "UPDATE tasks SET title = :title, scheduledTime = :scheduledTime, status = 'PENDING', snoozedUntil = NULL WHERE id = :taskId"
   )
   suspend fun update(taskId: Long, title: String, scheduledTime: Instant)
+
+  @Query("UPDATE tasks SET title = :title WHERE id = :taskId")
+  suspend fun rename(taskId: Long, title: String)
 
   @Query("DELETE FROM tasks WHERE id = :taskId")
   suspend fun delete(taskId: Long)
