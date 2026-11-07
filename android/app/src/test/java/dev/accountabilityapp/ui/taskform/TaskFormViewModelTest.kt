@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.MainDispatcherRule
 import dev.accountabilityapp.data.AppDatabase
+import dev.accountabilityapp.data.TASK_TITLE_MAX_LENGTH
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -43,6 +44,62 @@ class TaskFormViewModelTest {
 
     assertTrue(viewModel.uiState.value.showTitleRequired)
     assertEquals(emptyList<String>(), taskService.observeTaskList().first().map({ task -> task.title }))
+  })
+
+  @Test
+  fun aTitleStopsAtTheLimit() = runTest(testBody = { ->
+    val viewModel = TaskFormViewModel(taskService, clock)
+    val exactlyAtTheLimit = "a".repeat(TASK_TITLE_MAX_LENGTH)
+
+    viewModel.onTitleChange(exactlyAtTheLimit)
+    assertEquals(exactlyAtTheLimit, viewModel.uiState.value.title)
+
+    viewModel.onTitleChange(exactlyAtTheLimit + "b")
+    assertEquals(exactlyAtTheLimit, viewModel.uiState.value.title)
+  })
+
+  @Test
+  fun pastingAVeryLongTitle_keepsOnlyWhatFits_andThatIsWhatSaves() = runTest(testBody = { ->
+    val viewModel = TaskFormViewModel(taskService, clock)
+
+    viewModel.onTitleChange("x".repeat(TASK_TITLE_MAX_LENGTH * 50))
+    viewModel.save()
+
+    viewModel.uiState.first({ state -> state.isFinished })
+    assertEquals("x".repeat(TASK_TITLE_MAX_LENGTH), taskService.observeTaskList().first().single().title)
+  })
+
+  @Test
+  fun anEmojiAcrossTheLimit_isDroppedWhole_notCutInHalf() = runTest(testBody = { ->
+    val viewModel = TaskFormViewModel(taskService, clock)
+    val upToTheLastCharacter = "a".repeat(TASK_TITLE_MAX_LENGTH - 1)
+
+    viewModel.onTitleChange(upToTheLastCharacter + "\uD83D\uDC8A")
+
+    assertEquals(upToTheLastCharacter, viewModel.uiState.value.title)
+  })
+
+  @Test
+  fun typingInTheMiddleOfAFullTitle_isRefused_ratherThanCuttingOffTheEnd() = runTest(testBody = { ->
+    val viewModel = TaskFormViewModel(taskService, clock)
+    val fullTitle = "a".repeat(TASK_TITLE_MAX_LENGTH - 3) + "end"
+    viewModel.onTitleChange(fullTitle)
+
+    viewModel.onTitleChange("X$fullTitle")
+
+    assertEquals(fullTitle, viewModel.uiState.value.title)
+  })
+
+  @Test
+  fun aTitleSavedBeforeTheLimit_isLeftAloneUntilItIsEdited_andThenCanBeShortened() = runTest(testBody = { ->
+    val oldTitle = "y".repeat(TASK_TITLE_MAX_LENGTH + 50)
+    val taskId = taskService.add(title = oldTitle, scheduledTime = Instant.parse("2026-10-23T15:30:00Z"))
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
+    assertEquals(oldTitle, viewModel.uiState.first({ state -> !state.isLoading }).title)
+
+    viewModel.onTitleChange(oldTitle.dropLast(1))
+
+    assertEquals("y".repeat(TASK_TITLE_MAX_LENGTH), viewModel.uiState.value.title)
   })
 
   @Test

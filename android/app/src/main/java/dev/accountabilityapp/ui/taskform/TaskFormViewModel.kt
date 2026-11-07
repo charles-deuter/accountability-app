@@ -3,6 +3,7 @@ package dev.accountabilityapp.ui.taskform
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.accountabilityapp.data.TaskService
+import dev.accountabilityapp.data.limitedTitleOf
 import java.time.Clock
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -45,7 +46,7 @@ class TaskFormViewModel(private val taskService: TaskService, clock: Clock, priv
   }
 
   fun onTitleChange(title: String) {
-    _uiState.update({ state -> state.copy(title = title, showTitleRequired = false) })
+    _uiState.update({ state -> state.copy(title = limitedTitleOf(title, state.title), showTitleRequired = false) })
   }
 
   fun onScheduledTimeChange(scheduledTime: Instant) {

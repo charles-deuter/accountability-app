@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -41,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.accountabilityapp.R
 import dev.accountabilityapp.appContainerFrom
+import dev.accountabilityapp.data.TASK_TITLE_MAX_LENGTH
 import dev.accountabilityapp.reminders.isNotificationPermissionMissing
 import dev.accountabilityapp.ui.formatDate
 import dev.accountabilityapp.ui.formatTime
@@ -129,7 +131,13 @@ fun TaskFormScreen(
         onValueChange = onTitleChange,
         label = { Text(stringResource(R.string.title_label)) },
         isError = state.showTitleRequired,
-        supportingText = { if (state.showTitleRequired) Text(stringResource(R.string.title_required)) },
+        supportingText = {
+          Row {
+            if (state.showTitleRequired) Text(stringResource(R.string.title_required))
+            Spacer(Modifier.weight(1f))
+            Text(stringResource(R.string.title_counter, state.title.length, TASK_TITLE_MAX_LENGTH))
+          }
+        },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
       )
