@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -35,9 +38,10 @@ fun SnoozeRoute(viewModel: SnoozeViewModel, onFinished: () -> Unit) {
 /** The five presets, as big buttons on a card over a dimmed scrim. */
 @Composable
 fun SnoozeScreen(onSnooze: (SnoozeDuration) -> Unit) {
-  Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
+  Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)).safeDrawingPadding(), contentAlignment = Alignment.Center) {
     Surface(shape = MaterialTheme.shapes.extraLarge, modifier = Modifier.padding(24.dp).fillMaxWidth()) {
-      Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+      // Scrolls because the five presets don't fit on a sideways phone.
+      Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(stringResource(R.string.snooze_for), style = MaterialTheme.typography.headlineSmall)
         for (duration in SnoozeDuration.entries) {
           Button(onClick = { -> onSnooze(duration) }, modifier = Modifier.fillMaxWidth()) { Text(labelOf(duration)) }
