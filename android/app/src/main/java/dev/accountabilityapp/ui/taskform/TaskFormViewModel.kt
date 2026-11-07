@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.accountabilityapp.data.TaskService
 import dev.accountabilityapp.data.limitedTitleOf
+import dev.accountabilityapp.data.fireTimeOf
 import java.time.Clock
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -42,7 +43,7 @@ class TaskFormViewModel(private val taskService: TaskService, clock: Clock, priv
       _uiState.update({ state -> state.copy(isLoading = false) })
       return
     }
-    _uiState.update({ state -> state.copy(title = task.title, scheduledTime = task.scheduledTime, isLoading = false) })
+    _uiState.update({ state -> state.copy(title = task.title, scheduledTime = fireTimeOf(task), isLoading = false) })
   }
 
   fun onTitleChange(title: String) {
