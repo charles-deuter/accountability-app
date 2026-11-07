@@ -25,6 +25,6 @@ Design notes:
 
 **2026-11-06, agent:** Bug fix only, no schema change.
 - `TaskService.update` compares the submitted time with the Task's Fire time. A match renames the Task and leaves its status, snoozed-until time and Snooze count alone. Any other time goes through the existing update, which ends the Snooze and keeps the count.
-- The form loads `fireTimeOf(task)`, so a Snoozed Task shows the same time as its list badge. **Charlie hasn't confirmed this default yet.**
+- The form loads `fireTimeOf(task)`, so a Snoozed Task shows the same time as its list badge. Charlie confirmed this default on 2026-11-06.
 - The comparison is by the minute. The time picker has no seconds and a snoozed-until time does, so tapping OK without changing the time would otherwise have counted as a change.
 - `TaskServiceTest` and `TaskFormViewModelTest` cover the behaviour, and `RemindersTest` covers the alarm and notification.
