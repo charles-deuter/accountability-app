@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.RingtoneManager
+import android.net.Uri
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
 import dev.accountabilityapp.MainActivity
@@ -75,7 +76,7 @@ class ReminderNotifications(private val context: Context) {
       .setOngoing(true)
       .setAutoCancel(false)
       .setOnlyAlertOnce(true)
-      .setContentIntent(openAppIntentFrom(context))
+      .setContentIntent(tapIntentFrom(context, task.id))
       .addAction(0, context.getString(R.string.done), actionIntentFrom(context, ACTION_DONE, task.id))
       .addAction(0, context.getString(R.string.snooze), snoozeIntentFrom(context, task.id))
       // Android 14+ lets an unlocked user swipe even an ongoing notification away: that snoozes instead.
@@ -120,9 +121,14 @@ private fun isRinging(shown: StatusBarNotification): Boolean {
 
 private fun notificationIdOf(taskId: Long): Int = taskId.toInt()
 
-private fun openAppIntentFrom(context: Context): PendingIntent {
-  val intent = Intent(context, MainActivity::class.java)
-  return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE)
+/**
+ * Opens the app, which silences this Reminder. The data makes each Task's intent distinct to Android, which otherwise reuses
+ * an open task whose root intent matches without delivering the new one.
+ */
+private fun tapIntentFrom(context: Context, taskId: Long): PendingIntent {
+  val taskUri = Uri.parse("accountability://reminder/$taskId")
+  val intent = Intent(context, MainActivity::class.java).setData(taskUri).putExtra(EXTRA_TASK_ID, taskId)
+  return PendingIntent.getActivity(context, notificationIdOf(taskId), intent, PendingIntent.FLAG_IMMUTABLE)
 }
 
 private fun actionIntentFrom(context: Context, action: String, taskId: Long): PendingIntent {

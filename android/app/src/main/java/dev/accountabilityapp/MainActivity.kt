@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import dev.accountabilityapp.reminders.EXTRA_TASK_ID
 import dev.accountabilityapp.theme.AccountabilityAppTheme
 import kotlinx.coroutines.launch
 
@@ -18,6 +19,12 @@ class MainActivity : ComponentActivity() {
     // Force stop erases the app's alarms, and only the user opening the app can undo it: recompute them on every launch.
     val container = appContainerFrom(this)
     container.applicationScope.launch(block = { -> container.reminderSync.sync() })
+
+    // Tapping a Reminder is a response, so it stops ringing.
+    val tappedTaskId = intent.getLongExtra(EXTRA_TASK_ID, -1)
+    if (tappedTaskId != -1L) {
+      container.applicationScope.launch(block = { -> container.taskService.silence(tappedTaskId) })
+    }
 
     enableEdgeToEdge()
     setContent {
