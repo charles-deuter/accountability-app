@@ -163,6 +163,18 @@ class RemindersTest {
   })
 
   @Test
+  fun renamingASnoozedTaskPastItsOriginalTime_firesNoReminder_andLeavesTheAlarmAlone() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take mds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    taskService.snooze(medsId, SnoozeDuration.ONE_DAY)
+
+    taskService.update(medsId, title = "Take meds", scheduledTime = Instant.parse("2026-10-25T13:00:00Z"))
+
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
+    assertEquals(listOf(Instant.parse("2026-10-25T13:00:00Z")), alarmTimes())
+  })
+
+  @Test
   fun aReminder_carriesAFullScreenIntentToTheTakeoverForItsTask() = runTest(testBody = { ->
     val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
 
