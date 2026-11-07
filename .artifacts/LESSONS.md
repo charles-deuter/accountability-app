@@ -26,3 +26,9 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 
 **Wrong:** PR #2 merged mid-session and I never retargeted PR #3 to `main`, so PR #3 merged into the dead `feat/03` branch and ticket 05 never reached `main`.
 **Rule:** In a PR stack, check the base's state (`gh pr view <base>`) before each push and at the end of every turn. Once the base merges, retarget the next PR to `main` straight away.
+
+## 2026-11-06: Robolectric hid two real-device behaviours in ticket 26
+
+**Wrong:** Silencing treated any `onStop` as the user leaving, so the 30-second screen timeout silenced an unattended locked phone after about 35 seconds. It also read `activeNotifications` right after `notify()`, which is asynchronous on a phone and synchronous in Robolectric. All JVM tests passed.
+**Rule:** Green JVM tests say nothing about timing or system-driven lifecycle. For anything meant to run unattended, leave it unattended on a real device, and never read back system state just written through an asynchronous API.
+

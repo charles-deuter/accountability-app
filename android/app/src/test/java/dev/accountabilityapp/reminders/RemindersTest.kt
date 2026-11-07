@@ -20,7 +20,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -108,6 +111,8 @@ class RemindersTest {
     fireTheAlarm()
 
     assertEquals(listOf("Take meds"), notificationManager.allNotifications.map(::titleOf))
+    assertEquals(listOf(Instant.parse("2026-10-24T13:05:00Z")), alarmTimes())
+    fireTheAlarm()
     assertEquals(listOf(Instant.parse("2026-10-24T14:00:00Z")), alarmTimes())
   })
 
@@ -189,6 +194,151 @@ class RemindersTest {
   })
 
   @Test
+  fun silencingAReminder_keepsItInTheShadeWithDoneAndSnooze_butOnTheSilentChannelWithNoTakeover() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+
+    taskService.silence(medsId)
+
+    val reminder = notificationManager.allNotifications.single()
+    assertEquals(SILENCED_CHANNEL_ID, reminder.channelId)
+    assertEquals("Take meds", titleOf(reminder))
+    assertEquals(listOf("Done", "Snooze"), reminder.actions.map({ action -> action.title.toString() }))
+    assertTrue(reminder.flags and Notification.FLAG_ONGOING_EVENT != 0)
+    assertNull(reminder.fullScreenIntent)
+    assertEquals(TaskStatus.PENDING, taskService.findTask(medsId)?.status)
+  })
+
+  @Test
+  fun swipingASilencedReminderAway_stillSnoozesItForThirtyMinutes() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    taskService.silence(medsId)
+
+    val swipeIntent = shadowOf(notificationManager.allNotifications.single().deleteIntent).savedIntent
+    handleReminderAction(swipeIntent, taskService)
+
+    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), taskService.findTask(medsId)?.snoozedUntil)
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
+  })
+
+  @Test
+  fun aSilencedReminder_staysSilentOnALaterSync() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    taskService.silence(medsId)
+
+    container.reminderSync.sync()
+
+    val reminder = notificationManager.allNotifications.single()
+    assertEquals(SILENCED_CHANNEL_ID, reminder.channelId)
+    assertNull(reminder.fullScreenIntent)
+  })
+
+  @Test
+  fun aSilencedReminderReturningFromASnooze_ringsNormally() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    taskService.silence(medsId)
+    taskService.snooze(medsId, SnoozeDuration.FIFTEEN_MINUTES)
+
+    fireTheAlarm()
+
+    val reminder = notificationManager.allNotifications.single()
+    assertEquals(CHANNEL_ID, reminder.channelId)
+    assertNotNull(reminder.fullScreenIntent)
+  })
+
+  @Test
+  fun silencingOneOfTwoShowingReminders_leavesTheOtherRinging() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+
+    taskService.silence(medsId)
+
+    val channelByTitle = notificationManager.allNotifications.associate({ reminder -> titleOf(reminder) to reminder.channelId })
+    assertEquals(mapOf("Take meds" to SILENCED_CHANNEL_ID, "Call dentist" to CHANNEL_ID), channelByTitle)
+  })
+
+  @Test
+  fun silencingATaskWithNoShowingReminder_postsNothing() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+
+    taskService.silence(medsId)
+
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
+  })
+
+  @Test
+  fun withNoResponse_aReminderStopsRingingAfterFiveMinutes_andStaysInTheShadeWithDoneAndSnooze() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+    assertEquals(listOf(Instant.parse("2026-10-24T13:05:00Z")), alarmTimes())
+
+    fireTheAlarm()
+
+    val reminder = notificationManager.allNotifications.single()
+    assertEquals(SILENCED_CHANNEL_ID, reminder.channelId)
+    assertNull(reminder.fullScreenIntent)
+    assertEquals(listOf("Done", "Snooze"), reminder.actions.map({ action -> action.title.toString() }))
+    assertEquals(TaskStatus.PENDING, taskService.findTask(medsId)?.status)
+    assertEquals(0, taskService.findTask(medsId)?.snoozeCount)
+    assertEquals(emptyList<Instant>(), alarmTimes())
+  })
+
+  @Test
+  fun theFiveMinuteLimit_survivesTheProcessDying() = runTest(testBody = { ->
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+
+    // A new process: new objects, while the alarm and the notification live on in the system.
+    val nextProcess = AppContainer(context, clock = clock, database = database)
+    clock.now = Instant.ofEpochMilli(alarmManager.scheduledAlarms.single().triggerAtMs)
+    nextProcess.reminderSync.sync()
+
+    assertEquals(SILENCED_CHANNEL_ID, notificationManager.allNotifications.single().channelId)
+  })
+
+  @Test
+  fun aSyncBeforeTheFiveMinutesAreUp_leavesTheReminderRinging_andKeepsTheAlarmAtTheLimit() = runTest(testBody = { ->
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+
+    clock.now = Instant.parse("2026-10-24T13:04:59Z")
+    container.reminderSync.sync()
+
+    assertEquals(CHANNEL_ID, notificationManager.allNotifications.single().channelId)
+    assertEquals(listOf(Instant.parse("2026-10-24T13:05:00Z")), alarmTimes())
+  })
+
+  @Test
+  fun aFireTimeSoonerThanTheRingLimit_keepsTheAlarm_thenTheLimitFollows() = runTest(testBody = { ->
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-24T13:02:00Z"))
+    fireTheAlarm()
+    assertEquals(listOf(Instant.parse("2026-10-24T13:02:00Z")), alarmTimes())
+
+    fireTheAlarm()
+
+    assertEquals(listOf(Instant.parse("2026-10-24T13:05:00Z")), alarmTimes())
+    fireTheAlarm()
+    val channelByTitle = notificationManager.allNotifications.associate({ reminder -> titleOf(reminder) to reminder.channelId })
+    assertEquals(mapOf("Take meds" to SILENCED_CHANNEL_ID, "Call dentist" to CHANNEL_ID), channelByTitle)
+    assertEquals(listOf(Instant.parse("2026-10-24T13:07:00Z")), alarmTimes())
+  })
+
+  @Test
+  fun respondingBeforeTheLimit_dropsTheRingLimitAlarm() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+    fireTheAlarm()
+
+    taskService.silence(medsId)
+
+    assertEquals(emptyList<Instant>(), alarmTimes())
+  })
+
+  @Test
   fun afterARestart_tasksThatCameDueAreReminded_completedOnesNever_andTheAlarmIsSetForTheNext() = runTest(testBody = { ->
     // Written before the phone went off; the reboot erased their alarm and notifications.
     val taskDao = database.taskDao()
@@ -211,6 +361,8 @@ class RemindersTest {
 
     val remindedTitles = notificationManager.allNotifications.map(::titleOf).toSet()
     assertEquals(setOf("Missed while off", "Snooze ran out while off"), remindedTitles)
+    assertEquals(listOf(Instant.parse("2026-10-24T12:05:00Z")), alarmTimes())
+    fireTheAlarm()
     assertEquals(listOf(Instant.parse("2026-10-24T13:00:00Z")), alarmTimes())
   })
 
@@ -234,6 +386,15 @@ class RemindersTest {
     assertEquals(AudioAttributes.USAGE_ALARM, channel.audioAttributes.usage)
     assertTrue(channel.sound != null)
     assertTrue(channel.shouldVibrate())
+  }
+
+  @Test
+  fun appStartup_createsASilentChannelForSilencedReminders_thatStillAppearsInTheShade() {
+    val channel = context.getSystemService(NotificationManager::class.java).getNotificationChannel(SILENCED_CHANNEL_ID)
+
+    assertEquals(NotificationManager.IMPORTANCE_DEFAULT, channel.importance)
+    assertNull(channel.sound)
+    assertFalse(channel.shouldVibrate())
   }
 
   private fun alarmTimes(): List<Instant> = alarmManager.scheduledAlarms.map({ alarm -> Instant.ofEpochMilli(alarm.triggerAtMs) })

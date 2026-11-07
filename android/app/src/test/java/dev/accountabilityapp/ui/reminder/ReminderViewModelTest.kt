@@ -11,10 +11,14 @@ import dev.accountabilityapp.data.TaskStatus
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,6 +45,18 @@ class ReminderViewModelTest {
     val viewModel = ReminderViewModel(taskService, medsId)
 
     assertEquals("Take meds", viewModel.uiState.first({ state -> state.title.isNotEmpty() }).title)
+  })
+
+  @Test
+  fun withNoResponse_theTakeoverClosesAtTheRingLimit_notBefore() = runTest(testBody = { ->
+    val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
+
+    val viewModel = ReminderViewModel(taskService, medsId)
+
+    mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(4.minutes + 59.seconds)
+    assertFalse(viewModel.uiState.value.isFinished)
+    mainDispatcherRule.testDispatcher.scheduler.advanceTimeBy(2.seconds)
+    assertTrue(viewModel.uiState.value.isFinished)
   })
 
   @Test
