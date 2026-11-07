@@ -6,8 +6,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -23,6 +28,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
@@ -34,6 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -41,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.accountabilityapp.R
 import dev.accountabilityapp.appContainerFrom
+import dev.accountabilityapp.data.TASK_TITLE_MAX_LENGTH
 import dev.accountabilityapp.reminders.isNotificationPermissionMissing
 import dev.accountabilityapp.ui.formatDate
 import dev.accountabilityapp.ui.formatTime
@@ -92,6 +100,7 @@ fun TaskFormScreen(
   modifier: Modifier = Modifier,
   zone: ZoneId = ZoneId.systemDefault(),
 ) {
+  val isShortScreen = LocalConfiguration.current.screenHeightDp < SHORT_SCREEN_HEIGHT_DP
   var showDatePicker by remember({ -> mutableStateOf(false) })
   var showTimePicker by remember({ -> mutableStateOf(false) })
   var showDeleteConfirmation by remember({ -> mutableStateOf(false) })
@@ -121,7 +130,8 @@ fun TaskFormScreen(
     // While an existing Task loads, show nothing rather than a blank form that then jumps.
     if (state.isLoading) return@Scaffold
     Column(
-      Modifier.padding(innerPadding).padding(16.dp).fillMaxWidth(),
+      // Scrolls so Save stays reachable when a sideways phone's keyboard takes the bottom half.
+      Modifier.padding(innerPadding).consumeWindowInsets(innerPadding).imePadding().verticalScroll(rememberScrollState()).padding(16.dp).fillMaxWidth(),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       OutlinedTextField(
@@ -129,7 +139,13 @@ fun TaskFormScreen(
         onValueChange = onTitleChange,
         label = { Text(stringResource(R.string.title_label)) },
         isError = state.showTitleRequired,
-        supportingText = { if (state.showTitleRequired) Text(stringResource(R.string.title_required)) },
+        supportingText = {
+          Row {
+            if (state.showTitleRequired) Text(stringResource(R.string.title_required))
+            Spacer(Modifier.weight(1f))
+            Text(stringResource(R.string.title_counter, state.title.length, TASK_TITLE_MAX_LENGTH))
+          }
+        },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
       )
@@ -162,7 +178,18 @@ fun TaskFormScreen(
       },
       dismissButton = { TextButton(onClick = { -> showDatePicker = false }) { Text(stringResource(R.string.cancel)) } },
     ) {
-      DatePicker(state = datePickerState)
+      if (isShortScreen) {
+        // The calendar can't fit whole on a sideways phone, so its header goes and the rest scrolls. The dialog pins OK and Cancel.
+        DatePicker(
+          state = datePickerState,
+          title = null,
+          headline = null,
+          showModeToggle = false,
+          modifier = Modifier.verticalScroll(rememberScrollState()),
+        )
+      } else {
+        DatePicker(state = datePickerState)
+      }
     }
   }
 
@@ -195,9 +222,19 @@ fun TaskFormScreen(
         }
       },
       dismissButton = { TextButton(onClick = { -> showTimePicker = false }) { Text(stringResource(R.string.cancel)) } },
-      text = { TimePicker(state = timePickerState) },
+      text = {
+        // The clock dial can't fit on a sideways phone, so the time is typed instead.
+        if (isShortScreen) {
+          TimeInput(state = timePickerState)
+        } else {
+          TimePicker(state = timePickerState)
+        }
+      },
     )
   }
 }
+
+/** Shorter than this, the full calendar and the clock dial don't fit: a sideways phone, not a sideways tablet. */
+private const val SHORT_SCREEN_HEIGHT_DP = 600
 
 private fun combine(date: LocalDate, time: LocalTime, zone: ZoneId): Instant = date.atTime(time).atZone(zone).toInstant()

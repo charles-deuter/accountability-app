@@ -19,6 +19,24 @@ data class Task(
   val createdAt: Instant,
 )
 
+/** The longest a Task's title can be. A first try, so one number to change. */
+const val TASK_TITLE_MAX_LENGTH = 100
+
+/**
+ * What a title becomes when it's edited from [current] to [edited]. Text inserted before the end of a title with no room is
+ * refused, because keeping it would cut off the end of what the user already wrote. Anything else is shortened to the limit.
+ * An emoji is two Chars, so one sitting across the limit goes whole, not cut in half.
+ */
+fun limitedTitleOf(edited: String, current: String): String {
+  if (edited.length <= TASK_TITLE_MAX_LENGTH) return edited
+  val isLonger = edited.length > current.length
+  val isInsertedBeforeTheEnd = isLonger && !edited.startsWith(current)
+  if (isInsertedBeforeTheEnd) return current
+  val shortened = edited.take(TASK_TITLE_MAX_LENGTH)
+  val endsInsideACharacter = shortened.last().isHighSurrogate()
+  return if (endsInsideACharacter) shortened.dropLast(1) else shortened
+}
+
 enum class TaskStatus {
   PENDING,
   SNOOZED,

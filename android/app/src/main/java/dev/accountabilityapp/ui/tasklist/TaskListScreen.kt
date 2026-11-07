@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -87,7 +88,7 @@ private fun TaskRow(item: TaskListItem, onClick: () -> Unit) {
   val supportingText = if (item.isOverdue) "$overdueLabel · $fireTimeLabel" else fireTimeLabel
   val headlineColor = if (item.isOverdue) overdueColor else MaterialTheme.colorScheme.onSurface
   ListItem(
-    headlineContent = { Text(item.title) },
+    headlineContent = { Text(item.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
     supportingContent = { Text(supportingText, color = accentColor) },
     colors = ListItemDefaults.colors(headlineColor = headlineColor),
     modifier = Modifier.clickable(onClick = onClick),
