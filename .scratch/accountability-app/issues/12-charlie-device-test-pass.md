@@ -2,7 +2,7 @@
 
 **What to build:** Proof on real hardware that the notification engine does its job. Only Charlie can do this: it needs the physical phone, system-settings taps, and a reboot.
 
-**Blocked by:** 04, 10, 11
+**Blocked by:** 04, 10, 11, 26
 
 **Status:** ready-for-human
 
