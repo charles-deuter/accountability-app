@@ -25,7 +25,7 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 ## 2026-10-24: a stacked PR merged into its stale base
 
 **Wrong:** PR #2 merged mid-session and I never retargeted PR #3 to `main`, so PR #3 merged into the dead `feat/03` branch and ticket 05 never reached `main`.
-**Rule:** In a PR stack, check the base's state (`gh pr view <base>`) before each push and at the end of every turn. Once the base merges, retarget the next PR to `main` straight away.
+**Rule:** In a PR stack, check the base's state (`gh pr view <base>`) before each push and at the end of every turn. Once the base merges, retarget the next PR to `main` straight away. Before pushing to any PR's branch, make the state check gate the push (`[ "$(gh pr view N --json state -q .state)" = OPEN ] || exit 1`): on 2026-11-08 I printed `MERGED` and pushed anyway.
 
 ## 2026-11-06: Robolectric hid two real-device behaviours in ticket 26
 
