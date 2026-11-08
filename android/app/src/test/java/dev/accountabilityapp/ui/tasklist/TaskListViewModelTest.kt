@@ -67,13 +67,13 @@ class TaskListViewModelTest {
 
   @Test
   fun whileTheListIsObserved_aTaskTurnsOverdueWithinAMinuteOfItsFireTime() = runTest(testBody = { ->
-    val clock = SettableClock(Instant.parse("2026-10-21T12:00:00Z"))
-    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:00:30Z"))
+    val clock = SettableClock(Instant.parse("2026-10-21T12:00:30Z"))
+    taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:01:00Z"))
     val viewModel = TaskListViewModel(taskService, clock)
     backgroundScope.launch(block = { -> viewModel.uiState.collect({ _ -> }) })
     val before = viewModel.uiState.first({ state -> state.items.isNotEmpty() }).items.single()
 
-    clock.now = Instant.parse("2026-10-21T12:01:00Z")
+    clock.now = Instant.parse("2026-10-21T12:01:30Z")
     advanceTimeBy(60_000)
     runCurrent()
 
