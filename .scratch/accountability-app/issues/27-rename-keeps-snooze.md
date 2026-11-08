@@ -36,3 +36,5 @@ Design notes:
 - The database is version 2. Version 1 predates any release, so Room drops it rather than migrating. `AppDatabaseTest` proves that an old install opens empty instead of crashing.
 
 **2026-11-08, agent:** On Charlie's direction, `TaskService` rounds every time it is given up to the next whole minute: when a Task is added, when it is edited, and when it is Snoozed. A Snooze started at 12:00:30 for an hour ends at 13:01. Stored times never carry seconds, so `update` compares times exactly and the by-the-minute comparison is gone.
+
+**2026-11-08, agent:** On Charlie's direction, the Task Form decides whether the time changed, not `TaskService`. The form compares its time with the time it opened with: the same time calls `TaskService.rename`, which never touches the time or the Snooze, and a different time calls `reschedule`, which ends the Snooze. Changing the time and then changing it back counts as unchanged. This also fixes a race: a Snooze that lands from the notification while the form is open now survives a title-only save. Before, the form sent back the time it had opened with, which no longer matched, so the save ended the new Snooze.

@@ -95,7 +95,7 @@ class TaskServiceTest {
   fun editedTask_changesInPlace_ratherThanAddingANewOne() = runTest(testBody = { ->
     val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
 
-    taskService.update(taskId, title = "Call the dentist back", scheduledTime = Instant.parse("2026-10-23T14:00:00Z"))
+    taskService.reschedule(taskId, title = "Call the dentist back", scheduledTime = Instant.parse("2026-10-23T14:00:00Z"))
 
     val edited = taskService.observeTaskList().first().single()
     assertEquals(taskId, edited.id)
@@ -104,11 +104,11 @@ class TaskServiceTest {
   })
 
   @Test
-  fun changingOnlyTheTitleOfASnoozedTask_keepsItsSnooze() = runTest(testBody = { ->
+  fun renamingASnoozedTask_keepsItsSnooze() = runTest(testBody = { ->
     val taskId = taskService.add(title = "Cal dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
     taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
 
-    taskService.update(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T13:00:00Z"))
+    taskService.rename(taskId, title = "Call dentist")
 
     val edited = taskService.findTask(taskId)!!
     assertEquals("Call dentist", edited.title)
@@ -123,7 +123,7 @@ class TaskServiceTest {
     val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:30.500Z"))
     val added = taskService.findTask(taskId)!!.scheduledTime
 
-    taskService.update(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T10:00:01Z"))
+    taskService.reschedule(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T10:00:01Z"))
     val edited = taskService.findTask(taskId)!!
 
     assertEquals(Instant.parse("2026-10-22T09:01:00Z"), added)
@@ -143,27 +143,11 @@ class TaskServiceTest {
   })
 
   @Test
-  fun confirmingTheTimePickerWithoutChangingIt_keepsTheSnooze() = runTest(testBody = { ->
-    val halfPastNoon = Clock.fixed(Instant.parse("2026-10-21T12:00:30Z"), ZoneOffset.UTC)
-    val taskService = AppContainer(context, clock = halfPastNoon, database = database).taskService
+  fun reschedulingASnoozedTask_endsTheSnooze_andTheSnoozeCountStaysAsHistory() = runTest(testBody = { ->
     val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
     taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
 
-    // The picker works in whole minutes, so this is the Snoozed Task's time as the form shows it.
-    taskService.update(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T13:01:00Z"))
-
-    val edited = taskService.findTask(taskId)!!
-    assertEquals(TaskStatus.SNOOZED, edited.status)
-    assertEquals(Instant.parse("2026-10-21T13:01:00Z"), edited.scheduledTime)
-    assertEquals(Instant.parse("2026-10-21T11:00:00Z"), edited.originalScheduledTime)
-  })
-
-  @Test
-  fun changingTheTimeOfASnoozedTask_endsTheSnooze_andTheSnoozeCountStaysAsHistory() = runTest(testBody = { ->
-    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
-    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
-
-    taskService.update(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T18:00:00Z"))
+    taskService.reschedule(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T18:00:00Z"))
 
     val edited = taskService.findTask(taskId)!!
     assertEquals(TaskStatus.PENDING, edited.status)
@@ -173,10 +157,10 @@ class TaskServiceTest {
   })
 
   @Test
-  fun changingOnlyTheTitleOfAPendingTask_leavesItPendingAtItsTime() = runTest(testBody = { ->
+  fun renamingAPendingTask_leavesItPendingAtItsTime() = runTest(testBody = { ->
     val taskId = taskService.add(title = "Cal dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
 
-    taskService.update(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
+    taskService.rename(taskId, title = "Call dentist")
 
     val edited = taskService.findTask(taskId)!!
     assertEquals("Call dentist", edited.title)

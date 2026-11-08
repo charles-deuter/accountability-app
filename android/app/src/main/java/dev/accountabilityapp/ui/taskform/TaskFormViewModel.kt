@@ -30,6 +30,9 @@ class TaskFormViewModel(private val taskService: TaskService, clock: Clock, priv
   private val _uiState = MutableStateFlow(TaskFormUiState(scheduledTime = nextFullHour(clock), isEditing = isEditing, isLoading = isEditing))
   val uiState: StateFlow<TaskFormUiState> = _uiState.asStateFlow()
 
+  /** The time the form opened with. Saving the same time only renames the Task, so a Snooze survives. */
+  private var loadedScheduledTime: Instant? = null
+
   init {
     if (taskId != null) {
       viewModelScope.launch(block = { -> loadForEditing(taskId) })
@@ -42,6 +45,7 @@ class TaskFormViewModel(private val taskService: TaskService, clock: Clock, priv
       _uiState.update({ state -> state.copy(isLoading = false) })
       return
     }
+    loadedScheduledTime = task.scheduledTime
     _uiState.update({ state -> state.copy(title = task.title, scheduledTime = task.scheduledTime, isLoading = false) })
   }
 
@@ -60,11 +64,14 @@ class TaskFormViewModel(private val taskService: TaskService, clock: Clock, priv
       return
     }
     val title = form.title.trim()
+    val isTimeChanged = form.scheduledTime != loadedScheduledTime
     viewModelScope.launch(block = { ->
       if (taskId == null) {
         taskService.add(title = title, scheduledTime = form.scheduledTime)
+      } else if (isTimeChanged) {
+        taskService.reschedule(taskId, title = title, scheduledTime = form.scheduledTime)
       } else {
-        taskService.update(taskId, title = title, scheduledTime = form.scheduledTime)
+        taskService.rename(taskId, title = title)
       }
       _uiState.update({ state -> state.copy(isFinished = true) })
     })

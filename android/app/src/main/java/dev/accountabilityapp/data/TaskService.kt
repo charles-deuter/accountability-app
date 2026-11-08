@@ -24,18 +24,15 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
     return taskId
   }
 
-  /**
-   * A [scheduledTime] that matches the Task's own means the user left the time alone: the Task keeps its Snooze. Any
-   * other time ends the Snooze.
-   */
-  suspend fun update(taskId: Long, title: String, scheduledTime: Instant) {
-    val task = taskDao.findTask(taskId) ?: return
-    val newTime = roundUpToMinute(scheduledTime)
-    if (newTime == task.scheduledTime) {
-      taskDao.rename(taskId, title)
-    } else {
-      taskDao.update(taskId, title, newTime)
-    }
+  /** Changes only the title, so a Snoozed Task keeps its Snooze. */
+  suspend fun rename(taskId: Long, title: String) {
+    taskDao.rename(taskId, title)
+    reminderSync.sync()
+  }
+
+  /** Gives the Task a new time the user picked, which ends any Snooze. */
+  suspend fun reschedule(taskId: Long, title: String, scheduledTime: Instant) {
+    taskDao.reschedule(taskId, title, roundUpToMinute(scheduledTime))
     reminderSync.sync()
   }
 

@@ -182,6 +182,55 @@ class TaskFormViewModelTest {
   })
 
   @Test
+  fun confirmingTheTimePickerWithoutChangingIt_keepsTheSnooze() = runTest(testBody = { ->
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
+    val form = viewModel.uiState.first({ state -> !state.isLoading })
+
+    viewModel.onScheduledTimeChange(form.scheduledTime)
+    viewModel.save()
+
+    viewModel.uiState.first({ state -> state.isFinished })
+    assertEquals(TaskStatus.SNOOZED, taskService.findTask(taskId)?.status)
+  })
+
+  @Test
+  fun aSnoozeThatLandsWhileTheFormIsOpen_survivesSavingANewTitle() = runTest(testBody = { ->
+    val taskId = taskService.add(title = "Cal dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
+    viewModel.uiState.first({ state -> !state.isLoading })
+
+    // Snoozed from the notification after the form loaded the 11:00 time.
+    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
+    viewModel.onTitleChange("Call dentist")
+    viewModel.save()
+
+    viewModel.uiState.first({ state -> state.isFinished })
+    val saved = taskService.findTask(taskId)!!
+    assertEquals("Call dentist", saved.title)
+    assertEquals(TaskStatus.SNOOZED, saved.status)
+    assertEquals(Instant.parse("2026-10-21T13:00:00Z"), saved.scheduledTime)
+  })
+
+  @Test
+  fun changingTheTimeAndThenChangingItBack_keepsTheSnooze() = runTest(testBody = { ->
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
+    val viewModel = TaskFormViewModel(taskService, clock, taskId = taskId)
+    viewModel.uiState.first({ state -> !state.isLoading })
+
+    viewModel.onScheduledTimeChange(Instant.parse("2026-10-21T18:00:00Z"))
+    viewModel.onScheduledTimeChange(Instant.parse("2026-10-21T13:00:00Z"))
+    viewModel.save()
+
+    viewModel.uiState.first({ state -> state.isFinished })
+    val saved = taskService.findTask(taskId)!!
+    assertEquals(TaskStatus.SNOOZED, saved.status)
+    assertEquals(Instant.parse("2026-10-21T13:00:00Z"), saved.scheduledTime)
+  })
+
+  @Test
   fun savingANewTimeOnASnoozedTask_endsTheSnooze() = runTest(testBody = { ->
     val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
     taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
