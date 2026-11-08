@@ -34,3 +34,5 @@ Design notes:
 - A Snooze sets `scheduledTime` to that long from now. `originalScheduledTime` keeps the time the user picked, and nothing fires from it. Ticket 13 computes the next Instance from it.
 - Editing to a new time sets both times and ends the Snooze. Editing the title alone still keeps the Snooze, compared by the minute against `scheduledTime`. Charlie didn't pick between ending the Snooze and keeping it on a new time, so this keeps today's behaviour.
 - The database is version 2. Version 1 predates any release, so Room drops it rather than migrating. `AppDatabaseTest` proves that an old install opens empty instead of crashing.
+
+**2026-11-08, agent:** On Charlie's direction, `TaskService` rounds every time it is given up to the next whole minute: when a Task is added, when it is edited, and when it is Snoozed. A Snooze started at 12:00:30 for an hour ends at 13:01. Stored times never carry seconds, so `update` compares times exactly and the by-the-minute comparison is gone.

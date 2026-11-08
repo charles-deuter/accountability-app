@@ -9,7 +9,10 @@ import java.time.Instant
 data class Task(
   @PrimaryKey(autoGenerate = true) val id: Long = 0,
   val title: String,
-  /** The Task's Fire time, and the only time the alarm and notifications follow. A Snooze moves it. */
+  /**
+   * The Task's Fire time, and the only time the alarm and notifications follow. A Snooze moves it. Always a whole
+   * minute.
+   */
   val scheduledTime: Instant,
   val originalScheduledTime: Instant = scheduledTime,
   /** Set when a Template created this Task (ticket 13). */

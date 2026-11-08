@@ -119,25 +119,42 @@ class TaskServiceTest {
   })
 
   @Test
-  fun confirmingTheTimePickerWithoutChangingIt_keepsTheSnooze_thoughThePickerDropsTheSeconds() = runTest(testBody = { ->
-    val snoozedUntil = Instant.parse("2026-10-21T13:00:12.345Z")
-    val taskId =
-      database.taskDao().insert(
-        Task(
-          title = "Call dentist",
-          scheduledTime = snoozedUntil,
-          originalScheduledTime = Instant.parse("2026-10-21T11:00:00Z"),
-          status = TaskStatus.SNOOZED,
-          snoozeCount = 1,
-          createdAt = Instant.parse("2026-10-21T10:00:00Z"),
-        )
-      )
+  fun taskTimes_roundUpToTheNextWholeMinute() = runTest(testBody = { ->
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:30.500Z"))
+    val added = taskService.findTask(taskId)!!.scheduledTime
 
-    taskService.update(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T13:00:00Z"))
+    taskService.update(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T10:00:01Z"))
+    val edited = taskService.findTask(taskId)!!
+
+    assertEquals(Instant.parse("2026-10-22T09:01:00Z"), added)
+    assertEquals(Instant.parse("2026-10-22T10:01:00Z"), edited.scheduledTime)
+    assertEquals(Instant.parse("2026-10-22T10:01:00Z"), edited.originalScheduledTime)
+  })
+
+  @Test
+  fun aSnoozeStartedPartWayThroughAMinute_endsOnTheNextWholeMinute() = runTest(testBody = { ->
+    val halfPastNoon = Clock.fixed(Instant.parse("2026-10-21T12:00:30Z"), ZoneOffset.UTC)
+    val taskService = AppContainer(context, clock = halfPastNoon, database = database).taskService
+    val taskId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:00:00Z"))
+
+    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
+
+    assertEquals(Instant.parse("2026-10-21T13:01:00Z"), taskService.findTask(taskId)!!.scheduledTime)
+  })
+
+  @Test
+  fun confirmingTheTimePickerWithoutChangingIt_keepsTheSnooze() = runTest(testBody = { ->
+    val halfPastNoon = Clock.fixed(Instant.parse("2026-10-21T12:00:30Z"), ZoneOffset.UTC)
+    val taskService = AppContainer(context, clock = halfPastNoon, database = database).taskService
+    val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
+
+    // The picker works in whole minutes, so this is the Snoozed Task's time as the form shows it.
+    taskService.update(taskId, title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T13:01:00Z"))
 
     val edited = taskService.findTask(taskId)!!
     assertEquals(TaskStatus.SNOOZED, edited.status)
-    assertEquals(snoozedUntil, edited.scheduledTime)
+    assertEquals(Instant.parse("2026-10-21T13:01:00Z"), edited.scheduledTime)
     assertEquals(Instant.parse("2026-10-21T11:00:00Z"), edited.originalScheduledTime)
   })
 
