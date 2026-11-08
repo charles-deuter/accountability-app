@@ -4,7 +4,7 @@
 
 **Blocked by:** none
 
-**Status:** ready-for-human
+**Status:** resolved
 
 Found in QA on 2026-11-06. Swiping away the heads-up left the alarm playing with no end, and the sound carried on behind the Snooze picker.
 
@@ -30,7 +30,7 @@ Design notes:
 - [x] A Reminder returning from a Snooze rings normally
 - [x] Silencing one of two showing Reminders doesn't remove the other
 - [x] Tests cover each stop trigger and the silent repost or its equivalent, through the reminder seam (Robolectric)
-- [ ] Charlie confirms on the Pixel: every trigger above, including what a heads-up swipe does
+- [x] Charlie confirms on the Pixel: every trigger above, including what a heads-up swipe does
 
 ## Comments
 
@@ -51,3 +51,8 @@ Design notes:
 - **Behaviour to know:**
   - A reboot clears notifications, so a silenced Reminder rings again afterwards.
   - A second Reminder's takeover closing the first's counts as leaving, so the first goes silent while the second rings.
+
+**2026-11-07, agent:** Charlie's checks on the Pixel 10a with `main`'s build, the last open criterion. Times come from `dumpsys` logged every second.
+- **Tapping the notification's body:** the Reminder rang at 20:41:58. Within 2 seconds of Charlie's tap the app was open and the Reminder was on the silent channel, and the sound had stopped by 20:42:02. It stayed in the shade, silenced and not snoozed.
+- **Charlie's finger swipe on the heads-up:** the Reminder rang at 20:44:59 and the sound had stopped by 20:45:04. The swipe dismissed the notification, so the app snoozed it 30 minutes (alarm 21:16, rounded up to the minute). An adb swipe up only hides the heads-up; a finger swipe dismisses it. Both stop the sound, and QA's report of a heads-up swipe that kept ringing doesn't reproduce on this build.
+- **Vibration:** `dumpsys vibrator_manager` shows each Reminder vibrates once, for about 1 second, as it starts, and nothing after that while it rings. So vibration never outlasts the sound. Whether a Reminder should keep vibrating while it rings is a separate product question.
