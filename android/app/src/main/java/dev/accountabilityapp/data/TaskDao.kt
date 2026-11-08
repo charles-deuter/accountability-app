@@ -26,7 +26,7 @@ interface TaskDao {
     "UPDATE tasks SET title = :title, scheduledTime = :scheduledTime, originalScheduledTime = :scheduledTime, " +
       "status = 'PENDING' WHERE id = :taskId"
   )
-  suspend fun update(taskId: Long, title: String, scheduledTime: Instant)
+  suspend fun reschedule(taskId: Long, title: String, scheduledTime: Instant)
 
   @Query("UPDATE tasks SET title = :title WHERE id = :taskId")
   suspend fun rename(taskId: Long, title: String)

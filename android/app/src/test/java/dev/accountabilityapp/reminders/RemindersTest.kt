@@ -72,7 +72,7 @@ class RemindersTest {
     val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-24T13:00:00Z"))
     taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-24T15:00:00Z"))
 
-    taskService.update(medsId, title = "Take meds", scheduledTime = Instant.parse("2026-10-24T16:00:00Z"))
+    taskService.reschedule(medsId, title = "Take meds", scheduledTime = Instant.parse("2026-10-24T16:00:00Z"))
 
     assertEquals(listOf(Instant.parse("2026-10-24T15:00:00Z")), alarmTimes())
   })
@@ -161,7 +161,7 @@ class RemindersTest {
     fireTheAlarm()
     taskService.snooze(medsId, SnoozeDuration.ONE_DAY)
 
-    taskService.update(medsId, title = "Take meds", scheduledTime = Instant.parse("2026-10-24T18:00:00Z"))
+    taskService.reschedule(medsId, title = "Take meds", scheduledTime = Instant.parse("2026-10-24T18:00:00Z"))
 
     assertEquals(listOf(Instant.parse("2026-10-24T18:00:00Z")), alarmTimes())
     assertEquals(TaskStatus.PENDING, taskService.findTask(medsId)?.status)
@@ -173,7 +173,7 @@ class RemindersTest {
     fireTheAlarm()
     taskService.snooze(medsId, SnoozeDuration.ONE_DAY)
 
-    taskService.update(medsId, title = "Take meds", scheduledTime = Instant.parse("2026-10-25T13:00:00Z"))
+    taskService.rename(medsId, title = "Take meds")
 
     assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
     assertEquals(listOf(Instant.parse("2026-10-25T13:00:00Z")), alarmTimes())
