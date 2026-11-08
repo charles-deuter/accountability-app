@@ -12,6 +12,10 @@ Local markdown under `.scratch/`; v1 tickets live in `.scratch/accountability-ap
 
 Default five-role vocabulary; `ready-for-human` marks tickets that need Charlie's direct action. See `docs/agents/triage-labels.md`.
 
+## Testing
+
+- **A slow test is a symptom of the system, not of the timeout.** Timeouts stay sized for a healthy run. When tests run far slower than usual or time out, diagnose before changing any test: compare run times with earlier runs, then check the emulator or device (CPU cores, memory, swap, load average) and the host Mac (memory pressure, swap). Fix what you can fix yourself. When the fix needs Charlie, such as a device setting or a restart, stop and report what you measured and the change it needs.
+
 ## Coding style
 
 - **Plain functions, not extensions.** Write `fun isOverdue(task: Task, now: Instant)`, not `fun Task.isOverdue(now: Instant)`. An extension still has to be imported, so it adds nothing but dot syntax, and it hides where the function lives. If a library API forces an extension (for example a DSL receiver), reference receiver members with explicit `this.`.
