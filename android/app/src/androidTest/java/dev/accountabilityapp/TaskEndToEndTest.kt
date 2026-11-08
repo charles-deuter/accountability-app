@@ -2,9 +2,11 @@ package dev.accountabilityapp
 
 import android.Manifest
 import android.os.Build
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -51,8 +53,8 @@ class TaskEndToEndTest {
     composeTestRule.onNodeWithText("Title").performTextInput("Call dentist")
     composeTestRule.onNodeWithText("Save").performClick()
 
-    waitForText("Call dentist")
-    composeTestRule.onNodeWithText("Call dentist").assertIsDisplayed()
+    waitFor(taskListRowOf("Call dentist"))
+    composeTestRule.onNode(taskListRowOf("Call dentist")).assertIsDisplayed()
   }
 
   @Test
@@ -60,23 +62,20 @@ class TaskEndToEndTest {
     addTask("Call dentist")
     addTask("Pay rent")
 
-    waitForText("Call dentist")
-    composeTestRule.onNodeWithText("Call dentist").assertIsDisplayed()
-    waitForText("Pay rent")
-    composeTestRule.onNodeWithText("Pay rent").assertIsDisplayed()
+    composeTestRule.onNode(taskListRowOf("Call dentist")).assertIsDisplayed()
+    composeTestRule.onNode(taskListRowOf("Pay rent")).assertIsDisplayed()
   }
 
   @Test
   fun tappingATask_opensItPrefilled_andSavingShowsTheEdit() {
     addTask("Call dentist")
 
-    waitForText("Call dentist")
-    composeTestRule.onNodeWithText("Call dentist").performClick()
-    composeTestRule.onNodeWithText("Call dentist").performTextReplacement("Call the dentist back")
+    openTask("Call dentist")
+    composeTestRule.onNode(titleFieldOf("Call dentist")).performTextReplacement("Call the dentist back")
     composeTestRule.onNodeWithText("Save").performClick()
 
-    waitForText("Call the dentist back")
-    composeTestRule.onNodeWithText("Call the dentist back").assertIsDisplayed()
+    waitFor(taskListRowOf("Call the dentist back"))
+    composeTestRule.onNode(taskListRowOf("Call the dentist back")).assertIsDisplayed()
     composeTestRule.onNodeWithText("Call dentist").assertDoesNotExist()
   }
 
@@ -84,28 +83,48 @@ class TaskEndToEndTest {
   fun deletingATask_asksForConfirmation_thenRemovesIt() {
     addTask("Call dentist")
 
-    waitForText("Call dentist")
-    composeTestRule.onNodeWithText("Call dentist").performClick()
+    openTask("Call dentist")
     composeTestRule.onNodeWithContentDescription("Delete").performClick()
-    waitForText("Delete this reminder?")
+    waitFor(hasText("Delete this reminder?"))
     composeTestRule.onNodeWithText("Delete this reminder?").assertIsDisplayed()
     composeTestRule.onNodeWithText("Delete").performClick()
 
-    waitForText("No reminders yet. Tap + to add one.")
+    waitFor(hasText("No reminders yet. Tap + to add one."))
     composeTestRule.onNodeWithText("No reminders yet. Tap + to add one.").assertIsDisplayed()
   }
 
-  /** The Task List updates when Room emits on its own thread, which Compose's test synchronization doesn't wait for. */
-  private fun waitForText(text: String) {
+  /**
+   * Screens fill in when Room answers on its own thread, which Compose's test synchronization doesn't wait for. So a
+   * step waits for what it needs on screen rather than for Compose to be idle. The wait ends as soon as that appears;
+   * the long limit is for an emulator short on memory, where these runs took over 7 minutes instead of 40 seconds.
+   */
+  private fun waitFor(matcher: SemanticsMatcher) {
     composeTestRule.waitUntil(
-      timeoutMillis = 10_000,
-      condition = { -> composeTestRule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() },
+      timeoutMillis = 30_000,
+      condition = { -> composeTestRule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() },
     )
   }
 
+  /** Adds a Task and waits until the Task List shows it, so the next step starts from the list. */
   private fun addTask(title: String) {
     composeTestRule.onNodeWithContentDescription("Add task").performClick()
     composeTestRule.onNodeWithText("Title").performTextInput(title)
     composeTestRule.onNodeWithText("Save").performClick()
+    waitFor(taskListRowOf(title))
+  }
+
+  /** Taps a Task in the list and waits until the Task Form has loaded its title. */
+  private fun openTask(title: String) {
+    composeTestRule.onNode(taskListRowOf(title)).performClick()
+    waitFor(titleFieldOf(title))
   }
 }
+
+/** A Task List row: text you can't type into, unlike the Task Form's title field showing the same title. */
+private fun taskListRowOf(title: String): SemanticsMatcher {
+  val isEditable = hasSetTextAction()
+  return hasText(title) and !isEditable
+}
+
+/** The Task Form's title field once it holds [title]. */
+private fun titleFieldOf(title: String): SemanticsMatcher = hasText(title) and hasSetTextAction()
