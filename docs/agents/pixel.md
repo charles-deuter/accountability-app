@@ -6,7 +6,8 @@ Charlie's Pixel 10a (serial `5A091JEA316773`) is the real device for checks the 
 
 - Install builds with `adb install -r <apk>`, which keeps the app's data. `connectedDebugAndroidTest` uninstalls the app when it finishes and wipes Charlie's Tasks, so run it on the emulator only.
 - Notifications can be off after an install: `adb shell pm grant dev.accountabilityapp android.permission.POST_NOTIFICATIONS`. Exact alarms: `adb shell appops set dev.accountabilityapp SCHEDULE_EXACT_ALARM allow`.
-- Leave `--no-restart` off `am instrument`; on this phone it hangs. Instrumentation force-stops the app when it starts and when it finishes.
+- Leave `--no-restart` off `am instrument`; on this phone it hangs. Instrumentation force-stops the app when it starts and when it finishes, which cancels its alarms, so launch the app afterwards (`adb shell am start -n dev.accountabilityapp/.MainActivity`) to reschedule them.
+- `adb shell` drops quotes, so an `am instrument -e` value with a space fails with `Invalid userId`. Use values without spaces.
 
 ## Lock screen
 
@@ -19,6 +20,7 @@ Charlie's Pixel 10a (serial `5A091JEA316773`) is the real device for checks the 
 - A Reminder's channel: `adb shell dumpsys notification --noredact | grep -oE "effectiveNotificationChannel=NotificationChannel\{mId='reminders[a-z_]*'"`.
 - Front screen: `adb shell dumpsys window | grep -m1 mCurrentFocus`. It reads `NotificationShade` on the lock screen.
 - Next alarm: `adb shell dumpsys alarm | grep -A3 dev.accountabilityapp | grep origWhen`.
+- Vibration: `adb shell dumpsys vibrator_manager | grep "usage: ALARM"` lists each buzz with its start time and length. A Reminder vibrates once, for about 1 second, when it starts.
 
 ## Heads-up notifications
 
