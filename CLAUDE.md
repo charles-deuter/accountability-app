@@ -15,6 +15,7 @@ Default five-role vocabulary; `ready-for-human` marks tickets that need Charlie'
 ## Testing
 
 - **A slow test is a symptom of the system, not of the timeout.** Timeouts stay sized for a healthy run. When tests run far slower than usual or time out, diagnose before changing any test: compare run times with earlier runs, then check the emulator or device (CPU cores, memory, swap, load average) and the host Mac (memory pressure, swap). Fix what you can fix yourself. When the fix needs Charlie, such as a device setting or a restart, stop and report what you measured and the change it needs.
+- **Be wary of intermittent failures here.** End-to-end and ViewModel tests can race Room, which answers on its own thread that Compose's and coroutines' test synchronization doesn't wait for. So a test that fails and then passes on rerun is often a real bug in the test, not noise. Reproduce it with several forced runs and look for one cause behind the failures. Gradle skips a test run when nothing has changed and leaves the old reports in place, so add `--rerun` and confirm the report timestamps change.
 
 ## Coding style
 
