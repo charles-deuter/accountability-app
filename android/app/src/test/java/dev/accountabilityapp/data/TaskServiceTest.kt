@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,6 +68,20 @@ class TaskServiceTest {
   })
 
   @Test
+  fun snoozing_movesTheScheduledTime_andKeepsTheTimeTheUserPicked() = runTest(testBody = { ->
+    val taskId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
+
+    taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
+    taskService.snooze(taskId, SnoozeDuration.FIFTEEN_MINUTES)
+
+    val snoozed = taskService.findTask(taskId)!!
+    assertEquals(TaskStatus.SNOOZED, snoozed.status)
+    assertEquals(2, snoozed.snoozeCount)
+    assertEquals(Instant.parse("2026-10-21T12:15:00Z"), snoozed.scheduledTime)
+    assertEquals(Instant.parse("2026-10-21T11:00:00Z"), snoozed.originalScheduledTime)
+  })
+
+  @Test
   fun completedTask_leavesTheTaskList() = runTest(testBody = { ->
     val dentistId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-22T09:00:00Z"))
     taskService.add(title = "Pay rent", scheduledTime = Instant.parse("2026-11-01T10:00:00Z"))
@@ -100,9 +113,9 @@ class TaskServiceTest {
     val edited = taskService.findTask(taskId)!!
     assertEquals("Call dentist", edited.title)
     assertEquals(TaskStatus.SNOOZED, edited.status)
-    assertEquals(Instant.parse("2026-10-21T13:00:00Z"), edited.snoozedUntil)
+    assertEquals(Instant.parse("2026-10-21T13:00:00Z"), edited.scheduledTime)
     assertEquals(1, edited.snoozeCount)
-    assertEquals(Instant.parse("2026-10-21T11:00:00Z"), edited.scheduledTime)
+    assertEquals(Instant.parse("2026-10-21T11:00:00Z"), edited.originalScheduledTime)
   })
 
   @Test
@@ -112,10 +125,10 @@ class TaskServiceTest {
       database.taskDao().insert(
         Task(
           title = "Call dentist",
-          scheduledTime = Instant.parse("2026-10-21T11:00:00Z"),
+          scheduledTime = snoozedUntil,
+          originalScheduledTime = Instant.parse("2026-10-21T11:00:00Z"),
           status = TaskStatus.SNOOZED,
           snoozeCount = 1,
-          snoozedUntil = snoozedUntil,
           createdAt = Instant.parse("2026-10-21T10:00:00Z"),
         )
       )
@@ -124,7 +137,8 @@ class TaskServiceTest {
 
     val edited = taskService.findTask(taskId)!!
     assertEquals(TaskStatus.SNOOZED, edited.status)
-    assertEquals(snoozedUntil, edited.snoozedUntil)
+    assertEquals(snoozedUntil, edited.scheduledTime)
+    assertEquals(Instant.parse("2026-10-21T11:00:00Z"), edited.originalScheduledTime)
   })
 
   @Test
@@ -136,9 +150,9 @@ class TaskServiceTest {
 
     val edited = taskService.findTask(taskId)!!
     assertEquals(TaskStatus.PENDING, edited.status)
-    assertNull(edited.snoozedUntil)
     assertEquals(1, edited.snoozeCount)
     assertEquals(Instant.parse("2026-10-21T18:00:00Z"), edited.scheduledTime)
+    assertEquals(Instant.parse("2026-10-21T18:00:00Z"), edited.originalScheduledTime)
   })
 
   @Test

@@ -125,7 +125,7 @@ Tasks support the following recurrence patterns (enum-based, no recurrence engin
 - templateId (nullable FK — if created from a template)
 - status (enum: pending, snoozed, completed)
 - snoozeCount (int)
-- snoozedUntil (nullable timestamp)
+- originalScheduledTime (timestamp — the time the user picked; a Snooze moves scheduledTime and leaves this alone)
 - completedAt (nullable timestamp)
 - createdAt (timestamp)
 

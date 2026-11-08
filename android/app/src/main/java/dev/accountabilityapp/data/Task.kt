@@ -9,12 +9,17 @@ import java.time.Instant
 data class Task(
   @PrimaryKey(autoGenerate = true) val id: Long = 0,
   val title: String,
+  /** The Task's Fire time, and the only time the alarm and notifications follow. A Snooze moves it. */
   val scheduledTime: Instant,
+  /**
+   * The time the user picked, before any Snooze. Nothing fires from it; a Template computes its next Instance from it
+   * (ticket 13), so how long the user snoozed doesn't shift the series.
+   */
+  val originalScheduledTime: Instant = scheduledTime,
   /** Set when a Template created this Task (ticket 13). */
   val templateId: Long? = null,
   val status: TaskStatus = TaskStatus.PENDING,
   val snoozeCount: Int = 0,
-  val snoozedUntil: Instant? = null,
   val completedAt: Instant? = null,
   val createdAt: Instant,
 )
@@ -43,17 +48,9 @@ enum class TaskStatus {
   COMPLETED,
 }
 
-/** The moment a Task's Reminder goes off: its scheduled time, or its snoozed-until time while Snoozed. */
-fun fireTimeOf(task: Task): Instant {
-  val isSnoozed = task.status == TaskStatus.SNOOZED
-  val snoozedUntil = task.snoozedUntil
-  if (isSnoozed && snoozedUntil != null) return snoozedUntil
-  return task.scheduledTime
-}
-
 /** Overdue: the Fire time has passed and the Task isn't Completed. */
 fun isOverdue(task: Task, now: Instant): Boolean {
   val isCompleted = task.status == TaskStatus.COMPLETED
-  val fireTimeHasPassed = fireTimeOf(task).isBefore(now)
+  val fireTimeHasPassed = task.scheduledTime.isBefore(now)
   return !isCompleted && fireTimeHasPassed
 }

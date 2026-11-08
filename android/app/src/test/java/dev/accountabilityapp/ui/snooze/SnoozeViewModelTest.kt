@@ -60,7 +60,7 @@ class SnoozeViewModelTest {
     viewModel.snooze(SnoozeDuration.TWO_HOURS)
 
     viewModel.uiState.first({ state -> state.isFinished })
-    assertEquals(Instant.parse("2026-10-24T15:00:00Z"), taskService.findTask(medsId)?.snoozedUntil)
+    assertEquals(Instant.parse("2026-10-24T15:00:00Z"), taskService.findTask(medsId)?.scheduledTime)
   })
 
   @Test
@@ -71,7 +71,7 @@ class SnoozeViewModelTest {
     viewModel.leaveWithoutPicking()
 
     viewModel.uiState.first({ state -> state.isFinished })
-    assertEquals(Instant.parse("2026-10-24T13:15:00Z"), taskService.findTask(medsId)?.snoozedUntil)
+    assertEquals(Instant.parse("2026-10-24T13:15:00Z"), taskService.findTask(medsId)?.scheduledTime)
   })
 
   @Test
@@ -85,6 +85,6 @@ class SnoozeViewModelTest {
 
     val snoozed = taskService.findTask(medsId)!!
     assertEquals(1, snoozed.snoozeCount)
-    assertEquals(Instant.parse("2026-10-24T14:00:00Z"), snoozed.snoozedUntil)
+    assertEquals(Instant.parse("2026-10-24T14:00:00Z"), snoozed.scheduledTime)
   })
 }

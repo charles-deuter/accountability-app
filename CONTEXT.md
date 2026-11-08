@@ -29,7 +29,7 @@ _Avoid_: Repeat rule, RRULE, frequency
 ### Time
 
 **Fire time**:
-The moment a Task's Reminder goes off. It is the Task's scheduled time, or its snoozed-until time while Snoozed.
+The moment a Task's Reminder goes off. It is the Task's scheduled time, the only time the alarm follows. A Snooze moves the scheduled time; the time the user originally picked is kept apart and never fires.
 _Avoid_: Due date, deadline, alarm time
 
 **Overdue**:
@@ -43,7 +43,7 @@ The intrusive alert for a Task at its Fire time: a notification that can't be sw
 _Avoid_: Notification (the Android mechanism, not the concept), alarm, alert
 
 **Snooze**:
-Postponing a Task's Reminder by one of five preset durations. The Task stays visible in the Task List and its Snooze count goes up.
+Postponing a Task's Reminder by one of five preset durations: its scheduled time moves to that long from now. The Task stays visible in the Task List and its Snooze count goes up.
 _Avoid_: Delay, postpone, remind me later
 
 **Complete**:
@@ -56,7 +56,7 @@ _Avoid_: Dismiss (no such action exists), close, check off
 A Task that isn't Completed and has no active Snooze. A Pending Task can also be Overdue.
 
 **Snoozed**:
-A Task with an active Snooze. Its Fire time is its snoozed-until time.
+A Task with an active Snooze. It stays Snoozed until it is Completed or the user picks a new time.
 
 **Completed**:
 A Task that has been Completed. It no longer appears in the Task List.

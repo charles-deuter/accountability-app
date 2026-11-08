@@ -14,7 +14,6 @@ import androidx.core.app.NotificationCompat
 import dev.accountabilityapp.MainActivity
 import dev.accountabilityapp.R
 import dev.accountabilityapp.data.Task
-import dev.accountabilityapp.data.fireTimeOf
 import dev.accountabilityapp.ui.formatTime
 import dev.accountabilityapp.ui.reminder.ReminderActivity
 import dev.accountabilityapp.ui.snooze.snoozePickerIntentFrom
@@ -68,7 +67,7 @@ class ReminderNotifications(private val context: Context) {
       .setWhen(ringingSince.toEpochMilli())
       .setSmallIcon(R.drawable.ic_reminder)
       .setContentTitle(task.title)
-      .setContentText(formatTime(fireTimeOf(task)))
+      .setContentText(formatTime(task.scheduledTime))
       .setCategory(NotificationCompat.CATEGORY_ALARM)
       .setPriority(NotificationCompat.PRIORITY_MAX)
       .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

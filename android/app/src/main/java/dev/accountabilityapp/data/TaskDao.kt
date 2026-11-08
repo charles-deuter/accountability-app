@@ -10,11 +10,8 @@ import kotlinx.coroutines.flow.Flow
 interface TaskDao {
   @Insert suspend fun insert(task: Task): Long
 
-  /** Ordered by Fire time: the snoozed-until time while Snoozed, otherwise the scheduled time (see fireTimeOf). */
-  @Query(
-    "SELECT * FROM tasks WHERE status != 'COMPLETED' " +
-      "ORDER BY CASE WHEN status = 'SNOOZED' THEN snoozedUntil ELSE scheduledTime END"
-  )
+  /** Ordered by Fire time, which is the scheduled time. */
+  @Query("SELECT * FROM tasks WHERE status != 'COMPLETED' ORDER BY scheduledTime")
   fun observeTaskList(): Flow<List<Task>>
 
   /** Every Task that isn't Completed: the ones that can still need a Reminder. */
@@ -24,9 +21,10 @@ interface TaskDao {
   @Query("SELECT * FROM tasks WHERE id = :taskId")
   suspend fun findTask(taskId: Long): Task?
 
-  /** Picking a new time ends any Snooze; the Snooze count stays as history. */
+  /** Picking a new time replaces the time the user picked and ends any Snooze; the Snooze count stays as history. */
   @Query(
-    "UPDATE tasks SET title = :title, scheduledTime = :scheduledTime, status = 'PENDING', snoozedUntil = NULL WHERE id = :taskId"
+    "UPDATE tasks SET title = :title, scheduledTime = :scheduledTime, originalScheduledTime = :scheduledTime, " +
+      "status = 'PENDING' WHERE id = :taskId"
   )
   suspend fun update(taskId: Long, title: String, scheduledTime: Instant)
 
@@ -36,8 +34,8 @@ interface TaskDao {
   @Query("DELETE FROM tasks WHERE id = :taskId")
   suspend fun delete(taskId: Long)
 
-  /** One statement, so the count can't be lost between a read and a write. */
-  @Query("UPDATE tasks SET status = 'SNOOZED', snoozeCount = snoozeCount + 1, snoozedUntil = :snoozedUntil WHERE id = :taskId")
+  /** Moves the scheduled time and leaves the original alone. One statement, so the count can't be lost between a read and a write. */
+  @Query("UPDATE tasks SET status = 'SNOOZED', snoozeCount = snoozeCount + 1, scheduledTime = :snoozedUntil WHERE id = :taskId")
   suspend fun markSnoozed(taskId: Long, snoozedUntil: Instant)
 
   @Query("UPDATE tasks SET status = 'COMPLETED', completedAt = :completedAt WHERE id = :taskId")

@@ -174,7 +174,7 @@ class TaskFormViewModelTest {
     val saved = taskService.findTask(taskId)!!
     assertEquals("Call dentist", saved.title)
     assertEquals(TaskStatus.SNOOZED, saved.status)
-    assertEquals(Instant.parse("2026-10-21T13:00:00Z"), saved.snoozedUntil)
+    assertEquals(Instant.parse("2026-10-21T13:00:00Z"), saved.scheduledTime)
     assertEquals(1, saved.snoozeCount)
     // The original time has passed, so ending the Snooze here would ring the Reminder straight away.
     val notificationManager = shadowOf(context.getSystemService(NotificationManager::class.java))

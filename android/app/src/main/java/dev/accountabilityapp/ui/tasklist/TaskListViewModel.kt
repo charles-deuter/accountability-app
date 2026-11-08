@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import dev.accountabilityapp.data.Task
 import dev.accountabilityapp.data.TaskService
 import dev.accountabilityapp.data.TaskStatus
-import dev.accountabilityapp.data.fireTimeOf
 import dev.accountabilityapp.data.isOverdue
 import java.time.Clock
 import java.time.Instant
@@ -50,11 +49,11 @@ class TaskListViewModel(taskService: TaskService, clock: Clock, tickInterval: Du
 
 private fun taskListItemOf(task: Task, now: Instant): TaskListItem {
   val isSnoozed = task.status == TaskStatus.SNOOZED
-  val snoozedUntil = if (isSnoozed) task.snoozedUntil else null
+  val snoozedUntil = if (isSnoozed) task.scheduledTime else null
   return TaskListItem(
     id = task.id,
     title = task.title,
-    fireTime = fireTimeOf(task),
+    fireTime = task.scheduledTime,
     isOverdue = isOverdue(task, now),
     snoozeCount = task.snoozeCount,
     snoozedUntil = snoozedUntil,

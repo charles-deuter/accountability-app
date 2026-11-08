@@ -21,12 +21,12 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
   }
 
   /**
-   * The Task Form shows a Task's Fire time, so a [scheduledTime] that matches it means the user left the time alone: the
-   * Task keeps its Snooze. Any other time ends the Snooze.
+   * A [scheduledTime] that matches the Task's own means the user left the time alone: the Task keeps its Snooze. Any
+   * other time ends the Snooze.
    */
   suspend fun update(taskId: Long, title: String, scheduledTime: Instant) {
     val task = taskDao.findTask(taskId) ?: return
-    if (isSameMinute(scheduledTime, fireTimeOf(task))) {
+    if (isSameMinute(scheduledTime, task.scheduledTime)) {
       taskDao.rename(taskId, title)
     } else {
       taskDao.update(taskId, title, scheduledTime)
@@ -55,6 +55,6 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
   }
 }
 
-/** The time picker works in whole minutes while a snoozed-until time has seconds, so confirming it unchanged drops them. */
+/** The time picker works in whole minutes while a Snooze leaves seconds in the scheduled time, so confirming it unchanged drops them. */
 private fun isSameMinute(first: Instant, second: Instant): Boolean =
   first.truncatedTo(ChronoUnit.MINUTES) == second.truncatedTo(ChronoUnit.MINUTES)

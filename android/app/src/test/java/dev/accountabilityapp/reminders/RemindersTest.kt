@@ -139,7 +139,7 @@ class RemindersTest {
     val snoozed = taskService.findTask(medsId)!!
     assertEquals(TaskStatus.SNOOZED, snoozed.status)
     assertEquals(1, snoozed.snoozeCount)
-    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), snoozed.snoozedUntil)
+    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), snoozed.scheduledTime)
     assertEquals(listOf(Instant.parse("2026-10-24T13:30:00Z")), alarmTimes())
   })
 
@@ -201,7 +201,7 @@ class RemindersTest {
     val swipeIntent = shadowOf(reminder.deleteIntent).savedIntent
     handleReminderAction(swipeIntent, taskService)
 
-    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), taskService.findTask(medsId)?.snoozedUntil)
+    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), taskService.findTask(medsId)?.scheduledTime)
     assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
   })
 
@@ -230,7 +230,7 @@ class RemindersTest {
     val swipeIntent = shadowOf(notificationManager.allNotifications.single().deleteIntent).savedIntent
     handleReminderAction(swipeIntent, taskService)
 
-    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), taskService.findTask(medsId)?.snoozedUntil)
+    assertEquals(Instant.parse("2026-10-24T13:30:00Z"), taskService.findTask(medsId)?.scheduledTime)
     assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
   })
 
@@ -422,10 +422,10 @@ class RemindersTest {
 private fun snoozedTask(title: String, snoozedUntil: Instant): Task =
   Task(
     title = title,
-    scheduledTime = Instant.parse("2026-10-24T10:00:00Z"),
+    scheduledTime = snoozedUntil,
+    originalScheduledTime = Instant.parse("2026-10-24T10:00:00Z"),
     status = TaskStatus.SNOOZED,
     snoozeCount = 1,
-    snoozedUntil = snoozedUntil,
     createdAt = Instant.parse("2026-10-24T08:00:00Z"),
   )
 
