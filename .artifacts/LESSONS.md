@@ -37,3 +37,8 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 
 **Wrong:** `SnoozeViewModelTest` asserted right after `advanceUntilIdle()`, but the ViewModel's work ran through Room's own executor, outside the test scheduler. It passed in my runs and failed 2 of 3 after the rebase. I also nearly took 8 Gradle "passes" as proof, though Gradle had skipped the unchanged runs.
 **Rule:** When a test asserts on `viewModelScope` work that touches Room, give the database inline executors or wait on observable state. Count a new test as stable only after several forced reruns (`--rerun`).
+
+## 2026-11-08: I measured screenshot cost by file size
+
+**Wrong:** I ranked screenshots as the session's largest token cost from the characters of their saved image data, and wrote a "uiautomator dump first" rule on that basis. Image tokens are charged by pixel size, about 1,500 for a 700-pixel-wide screenshot, so 16 cost about 25k tokens. A full dump can cost more, and it hides ellipsized text.
+**Rule:** Estimate an image's tokens from its pixel size, never its byte size. Check a cost claim before writing a rule on it.
