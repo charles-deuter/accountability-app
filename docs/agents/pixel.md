@@ -10,14 +10,14 @@ Charlie's Pixel 10a (serial `5A091JEA316773`) is the real device for checks the 
 
 ## Lock screen
 
-- Unlocking needs Charlie. Ask, then poll until `adb shell dumpsys window | grep isKeyguardShowing` reads `false`. `mScreenLocked` in `dumpsys deviceidle` reads `false` even while the lock screen shows.
+- Unlocking needs Charlie. Ask, then poll until `adb shell dumpsys window | grep isKeyguardShowing` reads `false`. Use that, not `mScreenLocked` in `dumpsys deviceidle`, which disagreed with the screen during ticket 26.
 - The phone locks again about 30 seconds after Charlie unlocks it. While a script runs, send a no-op key every few seconds to keep it awake: `adb shell input keyevent KEYCODE_UNKNOWN`.
 
 ## Reading state as text
 
 - Ringing: `adb shell dumpsys audio | grep 'usage=USAGE_ALARM' | grep -c 'state:started'` is `1` while a Reminder's sound plays.
 - A Reminder's channel: `adb shell dumpsys notification --noredact | grep -oE "effectiveNotificationChannel=NotificationChannel\{mId='reminders[a-z_]*'"`.
-- Front screen: `adb shell dumpsys activity activities | grep -m1 topResumedActivity`.
+- Front screen: `adb shell dumpsys window | grep -m1 mCurrentFocus`. It reads `NotificationShade` on the lock screen.
 - Next alarm: `adb shell dumpsys alarm | grep -A3 dev.accountabilityapp | grep origWhen`.
 
 ## Heads-up notifications
