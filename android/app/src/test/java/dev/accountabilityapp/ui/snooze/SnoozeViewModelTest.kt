@@ -31,7 +31,16 @@ class SnoozeViewModelTest {
 
   private val context: Context = ApplicationProvider.getApplicationContext()
   private val clock = Clock.fixed(Instant.parse("2026-10-24T13:00:00Z"), ZoneOffset.UTC)
-  private val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
+  /**
+   * Queries run on the calling thread. The ViewModel's init silences through Room, and on Room's own executor that
+   * finishes outside the test scheduler, so advanceUntilIdle() could return before the Reminder was silenced.
+   */
+  private val database =
+    Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+      .allowMainThreadQueries()
+      .setQueryExecutor({ command -> command.run() })
+      .setTransactionExecutor({ command -> command.run() })
+      .build()
   private val taskService = AppContainer(context, clock = clock, database = database).taskService
 
   @After
