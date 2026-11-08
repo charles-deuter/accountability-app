@@ -2,7 +2,6 @@ package dev.accountabilityapp.reminders
 
 import dev.accountabilityapp.data.Task
 import dev.accountabilityapp.data.TaskDao
-import dev.accountabilityapp.data.fireTimeOf
 import java.time.Clock
 import java.time.Instant
 import kotlin.time.Duration.Companion.minutes
@@ -86,11 +85,11 @@ val RING_LIMIT = 5.minutes
 
 private fun ringDeadlineOf(ringingSince: Instant): Instant = ringingSince.plus(RING_LIMIT.toJavaDuration())
 
-private fun isDue(task: Task, now: Instant): Boolean = !fireTimeOf(task).isAfter(now)
+private fun isDue(task: Task, now: Instant): Boolean = !task.scheduledTime.isAfter(now)
 
 /** The soonest moment still in the future when a Reminder must start or stop ringing, or null when there is none. */
 private fun nextAlarmTimeOf(openTasks: List<Task>, ringDeadlines: Collection<Instant>, now: Instant): Instant? {
-  val alarmTimes = openTasks.map(::fireTimeOf) + ringDeadlines
+  val alarmTimes = openTasks.map({ task -> task.scheduledTime }) + ringDeadlines
   val futureAlarmTimes = alarmTimes.filter({ alarmTime -> alarmTime.isAfter(now) })
   return futureAlarmTimes.minOrNull()
 }
