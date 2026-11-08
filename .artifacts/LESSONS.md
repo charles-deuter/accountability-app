@@ -32,3 +32,8 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 **Wrong:** Silencing treated any `onStop` as the user leaving, so the 30-second screen timeout silenced an unattended locked phone after about 35 seconds. It also read `activeNotifications` right after `notify()`, which is asynchronous on a phone and synchronous in Robolectric. All JVM tests passed.
 **Rule:** Green JVM tests say nothing about timing or system-driven lifecycle. For anything meant to run unattended, leave it unattended on a real device, and never read back system state just written through an asynchronous API.
 
+
+## 2026-11-08: a flaky test reached main in ticket 26
+
+**Wrong:** `SnoozeViewModelTest` asserted right after `advanceUntilIdle()`, but the ViewModel's work ran through Room's own executor, outside the test scheduler. It passed in my runs and failed 2 of 3 after the rebase. I also nearly took 8 Gradle "passes" as proof, though Gradle had skipped the unchanged runs.
+**Rule:** When a test asserts on `viewModelScope` work that touches Room, give the database inline executors or wait on observable state. Count a new test as stable only after several forced reruns (`--rerun`).
