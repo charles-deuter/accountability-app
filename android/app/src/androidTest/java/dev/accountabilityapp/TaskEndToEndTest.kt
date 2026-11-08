@@ -95,12 +95,11 @@ class TaskEndToEndTest {
 
   /**
    * Screens fill in when Room answers on its own thread, which Compose's test synchronization doesn't wait for. So a
-   * step waits for what it needs on screen rather than for Compose to be idle. The wait ends as soon as that appears;
-   * the long limit is for an emulator short on memory, where these runs took over 7 minutes instead of 40 seconds.
+   * step waits for what it needs on screen rather than for Compose to be idle.
    */
   private fun waitFor(matcher: SemanticsMatcher) {
     composeTestRule.waitUntil(
-      timeoutMillis = 30_000,
+      timeoutMillis = 10_000,
       condition = { -> composeTestRule.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() },
     )
   }
