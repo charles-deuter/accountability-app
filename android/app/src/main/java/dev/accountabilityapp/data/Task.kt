@@ -11,10 +11,6 @@ data class Task(
   val title: String,
   /** The Task's Fire time, and the only time the alarm and notifications follow. A Snooze moves it. */
   val scheduledTime: Instant,
-  /**
-   * The time the user picked, before any Snooze. Nothing fires from it; a Template computes its next Instance from it
-   * (ticket 13), so how long the user snoozed doesn't shift the series.
-   */
   val originalScheduledTime: Instant = scheduledTime,
   /** Set when a Template created this Task (ticket 13). */
   val templateId: Long? = null,
