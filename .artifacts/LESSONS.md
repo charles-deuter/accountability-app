@@ -32,3 +32,8 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 **Wrong:** Silencing treated any `onStop` as the user leaving, so the 30-second screen timeout silenced an unattended locked phone after about 35 seconds. It also read `activeNotifications` right after `notify()`, which is asynchronous on a phone and synchronous in Robolectric. All JVM tests passed.
 **Rule:** Green JVM tests say nothing about timing or system-driven lifecycle. For anything meant to run unattended, leave it unattended on a real device, and never read back system state just written through an asynchronous API.
 
+
+## 2026-11-08: a background script kept going after its cd failed
+
+**Wrong:** I started `cd <worktree> && X; Y; Z` in the background after a reboot had wiped `/private/tmp`. The `cd` failed, but the `;` meant the rest would run in the main checkout once a device appeared. I stopped it in time. I also guessed the emulator name from its folder instead of running `emulator -list-avds`.
+**Rule:** In a multi-step background script, guard the `cd` with `|| exit 1`, never `&&` followed by `;`. Look up names (AVDs, devices) before using them. Worktrees and scratch files under `/private/tmp` don't survive a reboot.
