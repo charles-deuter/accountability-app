@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Context
 import dev.accountabilityapp.data.AppDatabase
 import dev.accountabilityapp.data.TaskService
+import dev.accountabilityapp.permissions.AndroidPermissionSource
+import dev.accountabilityapp.permissions.PermissionSource
 import dev.accountabilityapp.reminders.ReminderAlarm
 import dev.accountabilityapp.reminders.ReminderNotifications
 import dev.accountabilityapp.reminders.ReminderSync
@@ -36,6 +38,7 @@ class AppContainer(
   val reminderSync: ReminderSync =
     ReminderSync(database.taskDao(), clock, ReminderAlarm(context), ReminderNotifications(context))
   val taskService: TaskService = TaskService(database.taskDao(), clock, reminderSync)
+  val permissionSource: PermissionSource = AndroidPermissionSource(context)
 }
 
 /**

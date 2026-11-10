@@ -25,7 +25,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class TaskEndToEndTest {
 
-  @get:Rule val composeTestRule = createEmptyComposeRule()
+  @get:Rule(order = 0) val onboardingComplete = OnboardingCompleteRule()
+
+  @get:Rule(order = 1) val composeTestRule = createEmptyComposeRule()
 
   private lateinit var scenario: ActivityScenario<MainActivity>
 

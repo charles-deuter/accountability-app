@@ -1,13 +1,20 @@
 package dev.accountabilityapp.ui.tasklist
 
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -16,6 +23,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -27,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.accountabilityapp.R
@@ -36,11 +45,24 @@ import dev.accountabilityapp.ui.formatDateTime
 import java.time.Instant
 
 @Composable
-fun TaskListRoute(onAddTask: () -> Unit, onEditTask: (taskId: Long) -> Unit, modifier: Modifier = Modifier) {
+fun TaskListRoute(
+  onAddTask: () -> Unit,
+  onEditTask: (taskId: Long) -> Unit,
+  onFixGrants: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
   val container = appContainerFrom(LocalContext.current)
-  val viewModel: TaskListViewModel = viewModel(initializer = { -> TaskListViewModel(container.taskService, container.clock) })
+  val viewModel: TaskListViewModel =
+    viewModel(initializer = { ->
+      TaskListViewModel(container.taskService, container.clock, container.permissionSource, Build.VERSION.SDK_INT)
+    })
   val state by viewModel.uiState.collectAsStateWithLifecycle()
-  TaskListScreen(state = state, onAddTask = onAddTask, onEditTask = onEditTask, modifier = modifier)
+  // The user can allow or revoke grants in Settings at any time, so re-check each time the app comes back.
+  LifecycleResumeEffect(viewModel, effects = { ->
+    viewModel.recheckGrants()
+    this.onPauseOrDispose({ -> })
+  })
+  TaskListScreen(state = state, onAddTask = onAddTask, onEditTask = onEditTask, onFixGrants = onFixGrants, modifier = modifier)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +71,7 @@ fun TaskListScreen(
   state: TaskListUiState,
   onAddTask: () -> Unit,
   onEditTask: (taskId: Long) -> Unit,
+  onFixGrants: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   Scaffold(
@@ -58,17 +81,39 @@ fun TaskListScreen(
       FloatingActionButton(onClick = onAddTask) { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_task)) }
     },
   ) { innerPadding ->
-    if (state.items.isEmpty()) {
-      Box(Modifier.fillMaxSize().padding(innerPadding).padding(24.dp), contentAlignment = Alignment.Center) {
-        Text(stringResource(R.string.task_list_empty), style = MaterialTheme.typography.bodyLarge)
+    Column(Modifier.fillMaxSize().padding(innerPadding)) {
+      val grantWarning = state.grantWarning
+      if (grantWarning != null) {
+        GrantBanner(grantWarning, onClick = onFixGrants)
       }
-    } else {
-      LazyColumn(Modifier.fillMaxSize().padding(innerPadding)) {
-        items(state.items, key = { item -> item.id }) { item ->
-          TaskRow(item, onClick = { -> onEditTask(item.id) })
-          HorizontalDivider()
+      if (state.items.isEmpty()) {
+        Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+          Text(stringResource(R.string.task_list_empty), style = MaterialTheme.typography.bodyLarge)
+        }
+      } else {
+        LazyColumn(Modifier.fillMaxSize()) {
+          items(state.items, key = { item -> item.id }) { item ->
+            TaskRow(item, onClick = { -> onEditTask(item.id) })
+            HorizontalDivider()
+          }
         }
       }
+    }
+  }
+}
+
+@Composable
+private fun GrantBanner(warning: GrantWarning, onClick: () -> Unit) {
+  val message =
+    when (warning) {
+      GrantWarning.REMINDERS_MAY_RUN_LATE -> R.string.banner_reminders_may_run_late
+      GrantWarning.REMINDERS_MAY_NOT_RING -> R.string.banner_reminders_may_not_ring
+    }
+  Surface(color = MaterialTheme.colorScheme.errorContainer, modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+      Icon(Icons.Filled.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+      Spacer(Modifier.width(12.dp))
+      Text(stringResource(message), color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.bodyMedium)
     }
   }
 }
@@ -113,10 +158,12 @@ private fun TaskListScreenPreview() {
               snoozeCount = 3,
               snoozedUntil = Instant.parse("2026-10-22T17:00:00Z"),
             ),
-          )
+          ),
+          grantWarning = GrantWarning.REMINDERS_MAY_RUN_LATE,
         ),
       onAddTask = { -> },
       onEditTask = { _ -> },
+      onFixGrants = { -> },
     )
   }
 }

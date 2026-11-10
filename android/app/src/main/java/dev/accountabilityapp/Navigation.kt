@@ -1,17 +1,31 @@
 package dev.accountabilityapp
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import dev.accountabilityapp.ui.onboarding.OnboardingRoute
+import dev.accountabilityapp.ui.onboarding.isOnboardingComplete
+import dev.accountabilityapp.ui.onboarding.markOnboardingComplete
 import dev.accountabilityapp.ui.taskform.TaskFormRoute
 import dev.accountabilityapp.ui.tasklist.TaskListRoute
 
 @Composable
 fun MainNavigation() {
-  val backStack = rememberNavBackStack(TaskList)
+  val context = LocalContext.current
+  val isFirstLaunch = !isOnboardingComplete(context)
+  val startKey = if (isFirstLaunch) Onboarding else TaskList
+  val backStack = rememberNavBackStack(startKey)
+  // On first launch Onboarding is the only entry, so finishing puts the Task List beneath it before leaving. Opened from
+  // the Task List banner, it simply goes back.
+  val finishOnboarding: () -> Unit = { ->
+    markOnboardingComplete(context)
+    if (TaskList !in backStack) backStack.add(0, TaskList)
+    backStack.removeLastOrNull()
+  }
 
   NavDisplay(
     backStack = backStack,
@@ -21,10 +35,12 @@ fun MainNavigation() {
     entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
     entryProvider =
       entryProvider {
+        entry<Onboarding> { OnboardingRoute(onFinish = finishOnboarding) }
         entry<TaskList> {
           TaskListRoute(
             onAddTask = { -> backStack.add(AddTask) },
             onEditTask = { taskId -> backStack.add(EditTask(taskId)) },
+            onFixGrants = { -> backStack.add(Onboarding) },
           )
         }
         entry<AddTask> { TaskFormRoute(taskId = null, onDone = { -> backStack.removeLastOrNull() }) }

@@ -7,6 +7,30 @@
     <string name="overdue">Overdue</string>
     <string name="snoozed_badge">Snoozed %1$dx — until %2$s</string>
 
+    <string name="banner_reminders_may_run_late">Reminders may run a few minutes late: exact alarms are off. Tap to fix.</string>
+    <string name="banner_reminders_may_not_ring">A setting reminders need is off, so some may not ring. Tap to fix.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Set up reminders</string>
+    <string name="onboarding_intro">A few settings decide whether reminders ring on time. Each button opens the right screen in Settings.</string>
+    <string name="onboarding_continue">Continue</string>
+    <string name="notifications_step_title">Notifications</string>
+    <string name="notifications_step_explanation">Reminders arrive as notifications, so without this none of them can ring.</string>
+    <string name="notifications_step_action">Allow notifications</string>
+    <string name="notifications_step_done">Notifications allowed</string>
+    <string name="full_screen_step_title">Full-screen reminders</string>
+    <string name="full_screen_step_explanation">Lets a reminder take over the lock screen, like an incoming call, so you can\'t miss it.</string>
+    <string name="full_screen_step_action">Allow full-screen reminders</string>
+    <string name="full_screen_step_done">Full-screen reminders allowed</string>
+    <string name="exact_alarms_step_title">Exact alarms</string>
+    <string name="exact_alarms_step_explanation">Lets each reminder ring at its exact time instead of up to several minutes late.</string>
+    <string name="exact_alarms_step_action">Allow exact alarms</string>
+    <string name="exact_alarms_step_done">Exact alarms allowed</string>
+    <string name="battery_step_title">Battery optimization</string>
+    <string name="battery_step_explanation">On-time reminders are this app\'s core function, and battery optimization can delay them or stop them altogether.</string>
+    <string name="battery_step_action">Turn off battery optimization</string>
+    <string name="battery_step_done">Battery optimization off</string>
+
     <!-- Task Form -->
     <string name="add_task_title">New reminder</string>
     <string name="edit_task_title">Edit reminder</string>
