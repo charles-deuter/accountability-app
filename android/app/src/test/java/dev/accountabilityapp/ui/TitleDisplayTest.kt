@@ -83,7 +83,7 @@ class TitleDisplayTest {
   fun theTaskForm_countsTheTitleAgainstTheLimit() {
     val state = TaskFormUiState(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T09:00:00Z"))
     composeRule.setContent {
-      TaskFormScreen(state = state, onTitleChange = { _ -> }, onScheduledTimeChange = { _ -> }, onSave = { -> }, onDelete = { -> }, onBack = { -> })
+      TaskFormScreen(state = state, onTitleChange = { _ -> }, onScheduledTimeChange = { _ -> }, onRepeatChange = { _ -> }, onWeekdayToggle = { _ -> }, onPausedChange = { _ -> }, onSave = { -> }, onDelete = { -> }, onSkip = { -> }, onBack = { -> })
     }
 
     composeRule.onNodeWithText("12/$TASK_TITLE_MAX_LENGTH").assertIsDisplayed()

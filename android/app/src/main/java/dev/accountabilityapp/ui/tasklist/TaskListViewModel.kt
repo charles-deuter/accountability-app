@@ -26,6 +26,8 @@ data class TaskListItem(
   val snoozeCount: Int = 0,
   /** Set only while the Task is Snoozed. */
   val snoozedUntil: Instant? = null,
+  /** An Instance of a Template, shown with a repeat icon. */
+  val isRecurring: Boolean = false,
 )
 
 data class TaskListUiState(val items: List<TaskListItem> = emptyList())
@@ -57,6 +59,7 @@ private fun taskListItemOf(task: Task, now: Instant): TaskListItem {
     isOverdue = isOverdue(task, now),
     snoozeCount = task.snoozeCount,
     snoozedUntil = snoozedUntil,
+    isRecurring = task.templateId != null,
   )
 }
 

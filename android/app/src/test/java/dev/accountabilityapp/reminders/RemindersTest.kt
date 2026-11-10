@@ -12,10 +12,12 @@ import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.SettableClock
 import dev.accountabilityapp.data.AppDatabase
 import dev.accountabilityapp.data.SnoozeDuration
+import dev.accountabilityapp.data.Recurrence
 import dev.accountabilityapp.data.Task
 import dev.accountabilityapp.data.TaskStatus
 import dev.accountabilityapp.ui.reminder.ReminderActivity
 import java.time.Instant
+import java.time.LocalTime
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -126,6 +128,18 @@ class RemindersTest {
     assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
     assertEquals(emptyList<Task>(), taskService.observeTaskList().first())
     assertEquals(clock.now, taskService.findTask(medsId)?.completedAt)
+  })
+
+  @Test
+  fun doneOnARecurringReminder_clearsIt_andSetsTheAlarmForTheNextInstance() = runTest(testBody = { ->
+    taskService.addRecurring(title = "Take meds", recurrence = Recurrence.Daily, timeOfDay = LocalTime.of(13, 0), isActive = true)
+    fireTheAlarm()
+    val instance = taskService.observeTaskList().first().single()
+
+    taskService.complete(instance.id)
+
+    assertEquals(emptyList<Notification>(), notificationManager.allNotifications)
+    assertEquals(listOf(Instant.parse("2026-10-25T13:00:00Z")), alarmTimes())
   })
 
   @Test

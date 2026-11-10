@@ -30,9 +30,10 @@ class TaskService(private val database: AppDatabase, private val clock: Clock, p
     val now = clock.instant()
     val wholeMinute = timeOfDay.truncatedTo(ChronoUnit.MINUTES)
     val template = templateOf(title, recurrence, wholeMinute, isActive, createdAt = now)
+    val firstInstanceTime = firstInstanceTimeOf(template, now, clock.zone)
     val templateId = database.withTransaction(block = { ->
       val templateId = templateDao.insert(template)
-      createNextInstance(template.copy(id = templateId), after = now)
+      if (firstInstanceTime != null) insertInstance(template.copy(id = templateId), firstInstanceTime)
       templateId
     })
     reminderSync.sync()
@@ -80,14 +81,6 @@ class TaskService(private val database: AppDatabase, private val clock: Clock, p
     reminderSync.sync()
   }
 
-  /** Gives an active Template its pending Instance at the first occurrence after [after], if the series has one. */
-  private suspend fun createNextInstance(template: Template, after: Instant) {
-    if (!template.isActive) return
-    val nextOccurrence = nextOccurrenceOf(recurrenceOf(template), template.timeOfDay, after, clock.zone) ?: return
-    val instance = Task(title = template.title, scheduledTime = nextOccurrence, templateId = template.id, createdAt = clock.instant())
-    taskDao.insert(instance)
-  }
-
   /** Completing an Instance also creates the next one, in the same transaction, so a second Done can't create two. */
   suspend fun complete(taskId: Long) {
     database.withTransaction(block = { -> completeAndContinueSeries(taskId) })
@@ -107,17 +100,17 @@ class TaskService(private val database: AppDatabase, private val clock: Clock, p
     createInstanceAfter(task)
   }
 
-  /**
-   * Creates the Instance that follows [instance] in its series, if it has one. "Next" counts from the Instance's series
-   * slot (its original time), or from now if that has passed, so snoozing, moving or completing it late or early never
-   * shifts the series, and missed occurrences are skipped.
-   */
+  /** Creates the Instance that follows [instance] in its series, if it has one. */
   private suspend fun createInstanceAfter(instance: Task) {
     val templateId = instance.templateId ?: return
     val template = templateDao.findTemplate(templateId) ?: return
-    val seriesSlot = instance.originalScheduledTime
-    val after = maxOf(seriesSlot, clock.instant())
-    createNextInstance(template, after)
+    val nextInstanceTime = nextInstanceTimeOf(template, instance, clock.instant(), clock.zone) ?: return
+    insertInstance(template, nextInstanceTime)
+  }
+
+  private suspend fun insertInstance(template: Template, scheduledTime: Instant) {
+    val instance = Task(title = template.title, scheduledTime = scheduledTime, templateId = template.id, createdAt = clock.instant())
+    taskDao.insert(instance)
   }
 }
 

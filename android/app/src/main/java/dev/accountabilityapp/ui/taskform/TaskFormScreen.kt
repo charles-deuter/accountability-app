@@ -33,6 +33,23 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.painterResource
+import dev.accountabilityapp.data.Recurrence
+import dev.accountabilityapp.ui.formatDateTime
+import dev.accountabilityapp.ui.formatTimeOfDay
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -81,8 +98,12 @@ fun TaskFormRoute(taskId: Long?, onDone: () -> Unit, modifier: Modifier = Modifi
     state = state,
     onTitleChange = viewModel::onTitleChange,
     onScheduledTimeChange = viewModel::onScheduledTimeChange,
+    onRepeatChange = viewModel::onRepeatChange,
+    onWeekdayToggle = viewModel::onWeekdayToggle,
+    onPausedChange = viewModel::onPausedChange,
     onSave = viewModel::save,
     onDelete = viewModel::delete,
+    onSkip = viewModel::skip,
     onBack = onDone,
     modifier = modifier,
   )
@@ -94,8 +115,12 @@ fun TaskFormScreen(
   state: TaskFormUiState,
   onTitleChange: (String) -> Unit,
   onScheduledTimeChange: (Instant) -> Unit,
+  onRepeatChange: (Repeat) -> Unit,
+  onWeekdayToggle: (DayOfWeek) -> Unit,
+  onPausedChange: (Boolean) -> Unit,
   onSave: () -> Unit,
   onDelete: () -> Unit,
+  onSkip: () -> Unit,
   onBack: () -> Unit,
   modifier: Modifier = Modifier,
   zone: ZoneId = ZoneId.systemDefault(),
@@ -104,6 +129,9 @@ fun TaskFormScreen(
   var showDatePicker by remember({ -> mutableStateOf(false) })
   var showTimePicker by remember({ -> mutableStateOf(false) })
   var showDeleteConfirmation by remember({ -> mutableStateOf(false) })
+  var showSkipConfirmation by remember({ -> mutableStateOf(false) })
+  val series = state.series
+  val isOnce = state.repeat == Repeat.ONCE
   val screenTitle = if (state.isEditing) R.string.edit_task_title else R.string.add_task_title
   val scheduled = state.scheduledTime.atZone(zone)
 
@@ -118,7 +146,10 @@ fun TaskFormScreen(
           }
         },
         actions = {
-          if (state.isEditing) {
+          // An Instance is skipped, not deleted: its series carries on.
+          if (series != null) {
+            TextButton(onClick = { -> showSkipConfirmation = true }) { Text(stringResource(R.string.skip)) }
+          } else if (state.isEditing) {
             IconButton(onClick = { -> showDeleteConfirmation = true }) {
               Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.delete))
             }
@@ -149,8 +180,20 @@ fun TaskFormScreen(
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
       )
+      if (!state.isEditing) {
+        RepeatSection(state, onRepeatChange = onRepeatChange, onWeekdayToggle = onWeekdayToggle, onPausedChange = onPausedChange)
+      }
+      if (series != null) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+          Icon(painterResource(R.drawable.ic_repeat), contentDescription = null, modifier = Modifier.size(18.dp))
+          Text(repeatSummaryOf(series.recurrence, series.timeOfDay), style = MaterialTheme.typography.bodyMedium)
+        }
+      }
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = { -> showDatePicker = true }) { Text(formatDate(state.scheduledTime, zone)) }
+        // A series repeats at a time of day, so only a one-off Task has a date.
+        if (isOnce) {
+          OutlinedButton(onClick = { -> showDatePicker = true }) { Text(formatDate(state.scheduledTime, zone)) }
+        }
         OutlinedButton(onClick = { -> showTimePicker = true }) { Text(formatTime(state.scheduledTime, zone)) }
       }
       Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.save)) }
@@ -206,6 +249,21 @@ fun TaskFormScreen(
     )
   }
 
+  if (showSkipConfirmation) {
+    val confirmSkip: () -> Unit = { ->
+      showSkipConfirmation = false
+      onSkip()
+    }
+    val nextInstanceTime = series?.nextInstanceTime
+    AlertDialog(
+      onDismissRequest = { -> showSkipConfirmation = false },
+      title = { Text(stringResource(R.string.skip_confirmation)) },
+      text = nextInstanceTime?.let({ next -> { Text(stringResource(R.string.skip_next, formatDateTime(next, zone))) } }),
+      confirmButton = { TextButton(onClick = confirmSkip) { Text(stringResource(R.string.skip)) } },
+      dismissButton = { TextButton(onClick = { -> showSkipConfirmation = false }) { Text(stringResource(R.string.cancel)) } },
+    )
+  }
+
   if (showTimePicker) {
     val timePickerState = rememberTimePickerState(initialHour = scheduled.hour, initialMinute = scheduled.minute)
     AlertDialog(
@@ -231,6 +289,62 @@ fun TaskFormScreen(
         }
       },
     )
+  }
+}
+
+/** Once / Daily / Weekly, Weekly's days, and the Paused switch. Add Task only: opening a Task edits just that Task. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RepeatSection(
+  state: TaskFormUiState,
+  onRepeatChange: (Repeat) -> Unit,
+  onWeekdayToggle: (DayOfWeek) -> Unit,
+  onPausedChange: (Boolean) -> Unit,
+) {
+  val repeatLabels = mapOf(Repeat.ONCE to R.string.repeat_once, Repeat.DAILY to R.string.repeat_daily, Repeat.WEEKLY to R.string.repeat_weekly)
+  Text(stringResource(R.string.repeat_label), style = MaterialTheme.typography.labelLarge)
+  SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+    Repeat.entries.forEachIndexed({ index, repeat ->
+      SegmentedButton(
+        selected = state.repeat == repeat,
+        onClick = { -> onRepeatChange(repeat) },
+        shape = SegmentedButtonDefaults.itemShape(index = index, count = Repeat.entries.size),
+      ) {
+        Text(stringResource(repeatLabels.getValue(repeat)))
+      }
+    })
+  }
+  if (state.repeat == Repeat.WEEKLY) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      DayOfWeek.entries.forEach({ day ->
+        FilterChip(
+          selected = day in state.weekdays,
+          onClick = { -> onWeekdayToggle(day) },
+          label = { Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault())) },
+        )
+      })
+    }
+  }
+  if (state.repeat != Repeat.ONCE) {
+    // Locked on Paused while no days are ticked; the switch's own animation shows it flipping.
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+      Text(stringResource(R.string.paused), modifier = Modifier.weight(1f))
+      Switch(checked = state.isPaused, onCheckedChange = onPausedChange, enabled = !isPauseLocked(state))
+    }
+  }
+}
+
+/** "Repeats daily at 9:00 AM", "Repeats Mon, Wed, Fri at 9:00 AM". */
+@Composable
+private fun repeatSummaryOf(recurrence: Recurrence, timeOfDay: LocalTime): String {
+  val time = formatTimeOfDay(timeOfDay)
+  return when (recurrence) {
+    Recurrence.Daily -> stringResource(R.string.repeats_daily, time)
+    is Recurrence.Weekly -> {
+      val orderedDays = DayOfWeek.entries.filter({ day -> day in recurrence.days })
+      val dayNames = orderedDays.joinToString(", ", transform = { day -> day.getDisplayName(TextStyle.SHORT, Locale.getDefault()) })
+      stringResource(R.string.repeats_weekly, dayNames, time)
+    }
   }
 }
 

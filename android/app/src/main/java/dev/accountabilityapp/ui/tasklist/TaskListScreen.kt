@@ -1,9 +1,12 @@
 package dev.accountabilityapp.ui.tasklist
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -23,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -89,7 +93,14 @@ private fun TaskRow(item: TaskListItem, onClick: () -> Unit) {
   val headlineColor = if (item.isOverdue) overdueColor else MaterialTheme.colorScheme.onSurface
   ListItem(
     headlineContent = { Text(item.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-    supportingContent = { Text(supportingText, color = accentColor) },
+    supportingContent = {
+      Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (item.isRecurring) {
+          Icon(painterResource(R.drawable.ic_repeat), contentDescription = stringResource(R.string.repeats), tint = accentColor, modifier = Modifier.size(16.dp))
+        }
+        Text(supportingText, color = accentColor)
+      }
+    },
     colors = ListItemDefaults.colors(headlineColor = headlineColor),
     modifier = Modifier.clickable(onClick = onClick),
   )
@@ -105,6 +116,7 @@ private fun TaskListScreenPreview() {
           listOf(
             TaskListItem(1, "Take meds", Instant.parse("2026-10-21T09:00:00Z"), isOverdue = true),
             TaskListItem(2, "Call dentist", Instant.parse("2026-10-22T15:00:00Z"), isOverdue = false),
+            TaskListItem(4, "Stretch", Instant.parse("2026-10-22T08:00:00Z"), isOverdue = false, isRecurring = true),
             TaskListItem(
               3,
               "Pay rent",

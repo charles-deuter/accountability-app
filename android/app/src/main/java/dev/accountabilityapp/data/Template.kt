@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalTime
+import java.time.ZoneId
 
 /**
  * A recurring series. While it is active and has a next occurrence, it keeps exactly one pending Instance: a Task whose
@@ -40,6 +41,23 @@ fun recurrenceOf(template: Template): Recurrence =
     RecurrenceType.DAILY -> Recurrence.Daily
     RecurrenceType.WEEKLY -> Recurrence.Weekly(weekdaysOf(template.recurrenceData))
   }
+
+/** When an active Template's first Instance fires if it is saved at [now]: the first occurrence still ahead. Null while paused. */
+fun firstInstanceTimeOf(template: Template, now: Instant, zone: ZoneId): Instant? {
+  if (!template.isActive) return null
+  return nextOccurrenceOf(recurrenceOf(template), template.timeOfDay, after = now, zone = zone)
+}
+
+/**
+ * When the Instance after [instance] fires. It counts from the Instance's series slot (its original time), or from [now]
+ * if that has passed, so snoozing, moving, or completing it late or early never shifts the series, and missed occurrences
+ * are skipped.
+ */
+fun nextInstanceTimeOf(template: Template, instance: Task, now: Instant, zone: ZoneId): Instant? {
+  val seriesSlot = instance.originalScheduledTime
+  val after = maxOf(seriesSlot, now)
+  return firstInstanceTimeOf(template, after, zone)
+}
 
 private fun weekdayBitmaskOf(days: Set<DayOfWeek>): Int = days.sumOf({ day -> bitOf(day) })
 
