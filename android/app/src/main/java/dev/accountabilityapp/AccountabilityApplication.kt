@@ -35,7 +35,7 @@ class AppContainer(
   val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
   val reminderSync: ReminderSync =
     ReminderSync(database.taskDao(), clock, ReminderAlarm(context), ReminderNotifications(context))
-  val taskService: TaskService = TaskService(database.taskDao(), clock, reminderSync)
+  val taskService: TaskService = TaskService(database, clock, reminderSync)
 }
 
 /**

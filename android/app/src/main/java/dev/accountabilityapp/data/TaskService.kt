@@ -1,8 +1,10 @@
 package dev.accountabilityapp.data
 
+import androidx.room.withTransaction
 import dev.accountabilityapp.reminders.ReminderSync
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.Flow
 
@@ -10,12 +12,32 @@ import kotlinx.coroutines.flow.Flow
  * Task operations. Each write is followed by a [ReminderSync], so the alarm and notifications follow the database. Every
  * time a Task is given is rounded up to a whole minute.
  */
-class TaskService(private val taskDao: TaskDao, private val clock: Clock, private val reminderSync: ReminderSync) {
+class TaskService(private val database: AppDatabase, private val clock: Clock, private val reminderSync: ReminderSync) {
+
+  private val taskDao = database.taskDao()
+  private val templateDao = database.templateDao()
+
 
   /** Tasks shown in the Task List. */
   fun observeTaskList(): Flow<List<Task>> = taskDao.observeTaskList()
 
   suspend fun findTask(taskId: Long): Task? = taskDao.findTask(taskId)
+
+  suspend fun findTemplate(templateId: Long): Template? = templateDao.findTemplate(templateId)
+
+  /** Saves a recurring reminder. Returns the new Template's id. */
+  suspend fun addRecurring(title: String, recurrence: Recurrence, timeOfDay: LocalTime, isActive: Boolean): Long {
+    val now = clock.instant()
+    val wholeMinute = timeOfDay.truncatedTo(ChronoUnit.MINUTES)
+    val template = templateOf(title, recurrence, wholeMinute, isActive, createdAt = now)
+    val templateId = database.withTransaction(block = { ->
+      val templateId = templateDao.insert(template)
+      createNextInstance(template.copy(id = templateId), after = now)
+      templateId
+    })
+    reminderSync.sync()
+    return templateId
+  }
 
   suspend fun add(title: String, scheduledTime: Instant): Long {
     val task = Task(title = title, scheduledTime = roundUpToMinute(scheduledTime), createdAt = clock.instant())
@@ -36,6 +58,12 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
     reminderSync.sync()
   }
 
+  /** Skips one Instance of a series: it goes, and the next one takes its place. */
+  suspend fun skip(taskId: Long) {
+    database.withTransaction(block = { -> skipAndContinueSeries(taskId) })
+    reminderSync.sync()
+  }
+
   suspend fun delete(taskId: Long) {
     taskDao.delete(taskId)
     reminderSync.sync()
@@ -52,9 +80,44 @@ class TaskService(private val taskDao: TaskDao, private val clock: Clock, privat
     reminderSync.sync()
   }
 
+  /** Gives an active Template its pending Instance at the first occurrence after [after], if the series has one. */
+  private suspend fun createNextInstance(template: Template, after: Instant) {
+    if (!template.isActive) return
+    val nextOccurrence = nextOccurrenceOf(recurrenceOf(template), template.timeOfDay, after, clock.zone) ?: return
+    val instance = Task(title = template.title, scheduledTime = nextOccurrence, templateId = template.id, createdAt = clock.instant())
+    taskDao.insert(instance)
+  }
+
+  /** Completing an Instance also creates the next one, in the same transaction, so a second Done can't create two. */
   suspend fun complete(taskId: Long) {
-    taskDao.markCompleted(taskId, completedAt = clock.instant())
+    database.withTransaction(block = { -> completeAndContinueSeries(taskId) })
     reminderSync.sync()
+  }
+
+  private suspend fun completeAndContinueSeries(taskId: Long) {
+    val task = taskDao.findTask(taskId) ?: return
+    val completedCount = taskDao.markCompleted(taskId, completedAt = clock.instant())
+    val isNewlyCompleted = completedCount == 1
+    if (isNewlyCompleted) createInstanceAfter(task)
+  }
+
+  private suspend fun skipAndContinueSeries(taskId: Long) {
+    val task = taskDao.findTask(taskId) ?: return
+    taskDao.delete(taskId)
+    createInstanceAfter(task)
+  }
+
+  /**
+   * Creates the Instance that follows [instance] in its series, if it has one. "Next" counts from the Instance's series
+   * slot (its original time), or from now if that has passed, so snoozing, moving or completing it late or early never
+   * shifts the series, and missed occurrences are skipped.
+   */
+  private suspend fun createInstanceAfter(instance: Task) {
+    val templateId = instance.templateId ?: return
+    val template = templateDao.findTemplate(templateId) ?: return
+    val seriesSlot = instance.originalScheduledTime
+    val after = maxOf(seriesSlot, clock.instant())
+    createNextInstance(template, after)
   }
 }
 
