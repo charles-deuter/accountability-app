@@ -9,6 +9,8 @@ import dev.accountabilityapp.MainDispatcherRule
 import dev.accountabilityapp.SettableClock
 import dev.accountabilityapp.data.AppDatabase
 import dev.accountabilityapp.data.SnoozeDuration
+import dev.accountabilityapp.permissions.FakePermissionSource
+import dev.accountabilityapp.permissions.Grant
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -35,6 +37,7 @@ class TaskListViewModelTest {
   private val noon = Clock.fixed(Instant.parse("2026-10-21T12:00:00Z"), ZoneOffset.UTC)
   private val database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).allowMainThreadQueries().build()
   private val taskService = AppContainer(context, clock = noon, database = database).taskService
+  private val allGranted = FakePermissionSource(*Grant.entries.toTypedArray())
 
   @After
   fun tearDown() {
@@ -45,7 +48,7 @@ class TaskListViewModelTest {
   fun aTaskWhoseFireTimeHasPassed_isOverdue_andAFutureTaskIsNot() = runTest(testBody = { ->
     taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
     taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T13:00:00Z"))
-    val viewModel = TaskListViewModel(taskService, noon)
+    val viewModel = TaskListViewModel(taskService, noon, allGranted, sdkLevel = 34)
 
     val items = viewModel.uiState.first({ state -> state.items.size == 2 }).items
 
@@ -57,7 +60,7 @@ class TaskListViewModelTest {
     val medsId = taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
     taskService.snooze(medsId, SnoozeDuration.FIFTEEN_MINUTES)
     taskService.snooze(medsId, SnoozeDuration.THIRTY_MINUTES)
-    val viewModel = TaskListViewModel(taskService, noon)
+    val viewModel = TaskListViewModel(taskService, noon, allGranted, sdkLevel = 34)
 
     val item = viewModel.uiState.first({ state -> state.items.isNotEmpty() }).items.single()
 
@@ -69,7 +72,7 @@ class TaskListViewModelTest {
   fun whileTheListIsObserved_aTaskTurnsOverdueWithinAMinuteOfItsFireTime() = runTest(testBody = { ->
     val clock = SettableClock(Instant.parse("2026-10-21T12:00:30Z"))
     taskService.add(title = "Take meds", scheduledTime = Instant.parse("2026-10-21T12:01:00Z"))
-    val viewModel = TaskListViewModel(taskService, clock)
+    val viewModel = TaskListViewModel(taskService, clock, allGranted, sdkLevel = 34)
     backgroundScope.launch(block = { -> viewModel.uiState.collect({ _ -> }) })
     val before = viewModel.uiState.first({ state -> state.items.isNotEmpty() }).items.single()
 
@@ -79,5 +82,31 @@ class TaskListViewModelTest {
 
     assertEquals(false, before.isOverdue)
     assertEquals(true, viewModel.uiState.value.items.single().isOverdue)
+  })
+
+  @Test
+  fun theBanner_showsWhileAnyGrantIsMissing_andHidesOnceAllAreGranted() = runTest(testBody = { ->
+    val permissionSource = FakePermissionSource(Grant.EXACT_ALARMS, Grant.BATTERY_EXEMPTION)
+    val viewModel = TaskListViewModel(taskService, noon, permissionSource, sdkLevel = 34)
+    backgroundScope.launch(block = { -> viewModel.uiState.collect({ _ -> }) })
+    val whileMissing = viewModel.uiState.first({ state -> state.grantWarning != null }).grantWarning
+
+    permissionSource.granted.addAll(Grant.entries)
+    viewModel.recheckGrants()
+
+    assertEquals(GrantWarning.REMINDERS_MAY_NOT_RING, whileMissing)
+    assertEquals(null, viewModel.uiState.first({ state -> state.grantWarning == null }).grantWarning)
+  })
+
+  /** Saving still works without exact alarms: `RemindersTest` proves the inexact fallback. */
+  @Test
+  fun withOnlyExactAlarmsMissing_theBannerSaysRemindersMayRunLate() = runTest(testBody = { ->
+    val allButExactAlarms = Grant.entries.filter({ grant -> grant != Grant.EXACT_ALARMS })
+    val permissionSource = FakePermissionSource(*allButExactAlarms.toTypedArray())
+    val viewModel = TaskListViewModel(taskService, noon, permissionSource, sdkLevel = 34)
+
+    val warning = viewModel.uiState.first({ state -> state.grantWarning != null }).grantWarning
+
+    assertEquals(GrantWarning.REMINDERS_MAY_RUN_LATE, warning)
   })
 }

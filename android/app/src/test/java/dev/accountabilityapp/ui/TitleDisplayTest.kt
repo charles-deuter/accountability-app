@@ -41,7 +41,7 @@ class TitleDisplayTest {
   @Test
   fun theTaskList_showsAtMostTwoLinesOfATitle_endingInAnEllipsis() {
     val item = TaskListItem(1, longestTitle, Instant.parse("2026-10-21T09:00:00Z"), isOverdue = false)
-    composeRule.setContent { TaskListScreen(state = TaskListUiState(listOf(item)), onAddTask = { -> }, onEditTask = { _ -> }) }
+    composeRule.setContent { TaskListScreen(state = TaskListUiState(listOf(item)), onAddTask = { -> }, onEditTask = { _ -> }, onFixGrants = { -> }) }
 
     val layout = textLayoutOf(composeRule.onNodeWithText(longestTitle))
 
