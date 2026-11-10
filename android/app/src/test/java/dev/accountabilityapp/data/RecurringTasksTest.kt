@@ -144,4 +144,16 @@ class RecurringTasksTest {
     assertEquals(templateId, next.templateId)
     assertEquals(Instant.parse("2026-10-23T09:00:00Z"), next.scheduledTime)
   })
+
+  @Test
+  fun skippingAnInstanceThatWasAlreadyDone_changesNothing() = runTest(testBody = { ->
+    taskService.addRecurring(title = "Take meds", recurrence = Recurrence.Daily, timeOfDay = nineAm, isActive = true)
+    val first = taskService.observeTaskList().first().single()
+    taskService.complete(first.id)
+
+    taskService.skip(first.id)
+
+    assertEquals(TaskStatus.COMPLETED, taskService.findTask(first.id)?.status)
+    assertEquals(listOf(Instant.parse("2026-10-23T09:00:00Z")), taskService.observeTaskList().first().map({ task -> task.scheduledTime }))
+  })
 }

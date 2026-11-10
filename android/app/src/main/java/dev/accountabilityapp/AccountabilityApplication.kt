@@ -28,7 +28,7 @@ class AccountabilityApplication : Application() {
  */
 class AppContainer(
   context: Context,
-  val clock: Clock = Clock.systemDefaultZone(),
+  val clock: Clock = PhoneClock(),
   val database: AppDatabase = AppDatabase.open(context),
 ) {
   /** For work that must outlive a screen, such as a broadcast receiver's database read. */

@@ -34,6 +34,10 @@ interface TaskDao {
   @Query("DELETE FROM tasks WHERE id = :taskId")
   suspend fun delete(taskId: Long)
 
+  /** Returns how many Tasks it deleted: 0 when the Task was already Completed, so its history stays. */
+  @Query("DELETE FROM tasks WHERE id = :taskId AND status != 'COMPLETED'")
+  suspend fun deleteUnlessCompleted(taskId: Long): Int
+
   /** Moves the scheduled time and leaves the original alone. One statement, so the count can't be lost between a read and a write. */
   @Query("UPDATE tasks SET status = 'SNOOZED', snoozeCount = snoozeCount + 1, scheduledTime = :snoozedUntil WHERE id = :taskId")
   suspend fun markSnoozed(taskId: Long, snoozedUntil: Instant)

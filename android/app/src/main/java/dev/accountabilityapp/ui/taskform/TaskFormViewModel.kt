@@ -127,11 +127,13 @@ class TaskFormViewModel(private val taskService: TaskService, private val clock:
     val title = form.title.trim()
     val isTimeChanged = form.scheduledTime != loadedScheduledTime
     val recurrence = chosenRecurrenceOf(form)
+    val isNewTask = taskId == null
+    val isRecurring = recurrence != null
     viewModelScope.launch(block = { ->
-      if (taskId == null && recurrence != null) {
+      if (isNewTask && recurrence != null) {
         val timeOfDay = form.scheduledTime.atZone(clock.zone).toLocalTime()
         taskService.addRecurring(title = title, recurrence = recurrence, timeOfDay = timeOfDay, isActive = !form.isPaused)
-      } else if (taskId == null) {
+      } else if (isNewTask) {
         taskService.add(title = title, scheduledTime = form.scheduledTime)
       } else if (isTimeChanged) {
         taskService.reschedule(taskId, title = title, scheduledTime = form.scheduledTime)

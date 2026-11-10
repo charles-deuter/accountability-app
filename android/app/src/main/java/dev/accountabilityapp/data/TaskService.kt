@@ -32,9 +32,9 @@ class TaskService(private val database: AppDatabase, private val clock: Clock, p
     val template = templateOf(title, recurrence, wholeMinute, isActive, createdAt = now)
     val firstInstanceTime = firstInstanceTimeOf(template, now, clock.zone)
     val templateId = database.withTransaction(block = { ->
-      val templateId = templateDao.insert(template)
-      if (firstInstanceTime != null) insertInstance(template.copy(id = templateId), firstInstanceTime)
-      templateId
+      val insertedId = templateDao.insert(template)
+      if (firstInstanceTime != null) insertInstance(template.copy(id = insertedId), firstInstanceTime)
+      insertedId
     })
     reminderSync.sync()
     return templateId
@@ -59,7 +59,10 @@ class TaskService(private val database: AppDatabase, private val clock: Clock, p
     reminderSync.sync()
   }
 
-  /** Skips one Instance of a series: it goes, and the next one takes its place. */
+  /**
+   * Skips one Instance of a series: it goes, and the next one takes its place. An Instance already Completed (say, from
+   * its Reminder while its form was open) stays, because its Done already created the next one.
+   */
   suspend fun skip(taskId: Long) {
     database.withTransaction(block = { -> skipAndContinueSeries(taskId) })
     reminderSync.sync()
@@ -96,8 +99,9 @@ class TaskService(private val database: AppDatabase, private val clock: Clock, p
 
   private suspend fun skipAndContinueSeries(taskId: Long) {
     val task = taskDao.findTask(taskId) ?: return
-    taskDao.delete(taskId)
-    createInstanceAfter(task)
+    val deletedCount = taskDao.deleteUnlessCompleted(taskId)
+    val isNewlySkipped = deletedCount == 1
+    if (isNewlySkipped) createInstanceAfter(task)
   }
 
   /** Creates the Instance that follows [instance] in its series, if it has one. */

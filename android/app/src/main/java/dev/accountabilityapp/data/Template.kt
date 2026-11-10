@@ -29,12 +29,26 @@ enum class RecurrenceType {
   WEEKLY,
 }
 
-fun templateOf(title: String, recurrence: Recurrence, timeOfDay: LocalTime, isActive: Boolean, createdAt: Instant): Template =
-  when (recurrence) {
-    Recurrence.Daily -> Template(title = title, recurrenceType = RecurrenceType.DAILY, recurrenceData = 0, timeOfDay = timeOfDay, isActive = isActive, createdAt = createdAt)
-    is Recurrence.Weekly ->
-      Template(title = title, recurrenceType = RecurrenceType.WEEKLY, recurrenceData = weekdayBitmaskOf(recurrence.days), timeOfDay = timeOfDay, isActive = isActive, createdAt = createdAt)
-  }
+fun templateOf(title: String, recurrence: Recurrence, timeOfDay: LocalTime, isActive: Boolean, createdAt: Instant): Template {
+  val recurrenceType =
+    when (recurrence) {
+      Recurrence.Daily -> RecurrenceType.DAILY
+      is Recurrence.Weekly -> RecurrenceType.WEEKLY
+    }
+  val recurrenceData =
+    when (recurrence) {
+      Recurrence.Daily -> 0
+      is Recurrence.Weekly -> weekdayBitmaskOf(recurrence.days)
+    }
+  return Template(
+    title = title,
+    recurrenceType = recurrenceType,
+    recurrenceData = recurrenceData,
+    timeOfDay = timeOfDay,
+    isActive = isActive,
+    createdAt = createdAt,
+  )
+}
 
 fun recurrenceOf(template: Template): Recurrence =
   when (template.recurrenceType) {
@@ -61,6 +75,11 @@ fun nextInstanceTimeOf(template: Template, instance: Task, now: Instant, zone: Z
 
 private fun weekdayBitmaskOf(days: Set<DayOfWeek>): Int = days.sumOf({ day -> bitOf(day) })
 
-private fun weekdaysOf(bitmask: Int): Set<DayOfWeek> = DayOfWeek.entries.filter({ day -> bitmask and bitOf(day) != 0 }).toSet()
+private fun weekdaysOf(bitmask: Int): Set<DayOfWeek> = DayOfWeek.entries.filter({ day -> isDayInBitmask(day, bitmask) }).toSet()
+
+private fun isDayInBitmask(day: DayOfWeek, bitmask: Int): Boolean {
+  val dayBit = bitmask and bitOf(day)
+  return dayBit != 0
+}
 
 private fun bitOf(day: DayOfWeek): Int = 1 shl (day.value - 1)

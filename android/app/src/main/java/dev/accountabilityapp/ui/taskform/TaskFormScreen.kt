@@ -320,7 +320,7 @@ private fun RepeatSection(
         FilterChip(
           selected = day in state.weekdays,
           onClick = { -> onWeekdayToggle(day) },
-          label = { Text(day.getDisplayName(TextStyle.SHORT, Locale.getDefault())) },
+          label = { Text(shortNameOf(day)) },
         )
       })
     }
@@ -342,11 +342,14 @@ private fun repeatSummaryOf(recurrence: Recurrence, timeOfDay: LocalTime): Strin
     Recurrence.Daily -> stringResource(R.string.repeats_daily, time)
     is Recurrence.Weekly -> {
       val orderedDays = DayOfWeek.entries.filter({ day -> day in recurrence.days })
-      val dayNames = orderedDays.joinToString(", ", transform = { day -> day.getDisplayName(TextStyle.SHORT, Locale.getDefault()) })
+      val dayNames = orderedDays.joinToString(", ", transform = ::shortNameOf)
       stringResource(R.string.repeats_weekly, dayNames, time)
     }
   }
 }
+
+/** "Mon", "Tue", … in the phone's language. */
+private fun shortNameOf(day: DayOfWeek): String = day.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
 /** Shorter than this, the full calendar and the clock dial don't fit: a sideways phone, not a sideways tablet. */
 private const val SHORT_SCREEN_HEIGHT_DP = 600
