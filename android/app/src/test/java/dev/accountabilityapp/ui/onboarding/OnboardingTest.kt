@@ -4,6 +4,7 @@ import android.Manifest.permission.POST_NOTIFICATIONS
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -95,6 +96,17 @@ class OnboardingTest {
 
     composeTestRule.onNodeWithText("Exact alarms allowed").assertExists()
     composeTestRule.onNodeWithText(EXACT_ALARMS_BUTTON).assertDoesNotExist()
+  }
+
+  @Test
+  @Config(sdk = [34])
+  fun continue_staysOnScreenWithoutScrolling_andFinishesOnboarding() {
+    var finished = false
+    showOnboarding(FakePermissionSource(), onFinish = { -> finished = true })
+
+    composeTestRule.onNodeWithText("Continue").assertIsDisplayed().performClick()
+
+    assertEquals(true, finished)
   }
 
   private fun answerPermissionRequest(request: ShadowActivity.PermissionsRequest?, result: Int) {

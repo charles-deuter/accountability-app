@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -94,7 +95,16 @@ fun OnboardingScreen(
   onFinish: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  Scaffold(modifier = modifier, topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_title)) }) }) { innerPadding ->
+  Scaffold(
+    modifier = modifier,
+    topBar = { TopAppBar(title = { Text(stringResource(R.string.onboarding_title)) }) },
+    // Outside the scrolling steps, so Continue is always on screen however many steps there are.
+    bottomBar = {
+      Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
+        Text(stringResource(R.string.onboarding_continue))
+      }
+    },
+  ) { innerPadding ->
     Column(
       modifier = Modifier.padding(innerPadding).verticalScroll(rememberScrollState()).padding(16.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -103,7 +113,6 @@ fun OnboardingScreen(
       for (step in steps) {
         StepCard(step, onAllow = { -> onAllowGrant(step.grant) })
       }
-      Button(onClick = onFinish, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.onboarding_continue)) }
     }
   }
 }
