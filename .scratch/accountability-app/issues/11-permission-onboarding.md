@@ -40,5 +40,10 @@ Play policy notes (from Google's Alarms and Doze docs):
   - "Allow exact alarms" opened `Settings$AlarmsAndRemindersAppActivity`. After the grant and Back, the step read "Exact alarms allowed".
   - Continue led to the Task List, whose banner said a setting is off.
   - This pass found Continue half-hidden under the gesture bar, so it now sits in a bottom bar.
-- **Not proven by a test:** the first-launch flag through `MainActivity` (no agreed seam covers it), and the real permission checks in `AndroidPermissionSource`, which only a device can answer. Charlie can check the battery dialog and the notification dialog on the Pixel.
+- **Pixel 10a, Android 17, blank install:**
+  - The notifications step opened the system dialog (`GrantPermissionsActivity`).
+  - The exact-alarm step opened Settings › Alarms & reminders.
+  - The battery step opened the one-tap "Let app always run in background?" dialog. Charlie denied it, the exemption stayed off, and the banner stayed up.
+  - The real permission reads in `AndroidPermissionSource` matched what the phone reported.
+- **Not proven by a test:** the first-launch flag through `MainActivity`, because no approved seam covers it. The emulator smoke pass covered it.
 
