@@ -7,8 +7,9 @@ import dev.accountabilityapp.appContainerFrom
 import kotlinx.coroutines.launch
 
 /**
- * Android erases every alarm on reboot, and an app update or clock change can leave the one alarm wrong. Each of those
- * broadcasts (see the manifest) re-runs the sync, which recomputes the alarm from the database and posts any Reminder
+ * Android erases every alarm on reboot, and an app update or clock change can leave the one alarm wrong; an alarm set
+ * while exact alarms were off stays inexact after the user allows them. Each of those broadcasts (see the manifest)
+ * re-runs the sync, which recomputes the alarm from the database and posts any Reminder
  * that came due while the phone was off.
  */
 class RescheduleReceiver : BroadcastReceiver() {

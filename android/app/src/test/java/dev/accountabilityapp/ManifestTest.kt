@@ -1,6 +1,7 @@
 package dev.accountabilityapp
 
 import android.Manifest
+import android.app.AlarmManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -33,13 +34,15 @@ class ManifestTest {
   }
 
   @Test
-  fun bootClockChangesAndAppUpdates_allReachTheRescheduleReceiver() {
+  fun bootClockChangesAppUpdatesAndAnExactAlarmGrant_allReachTheRescheduleReceiver() {
     val systemEvents =
       listOf(
         Intent.ACTION_BOOT_COMPLETED,
         Intent.ACTION_TIME_CHANGED,
         Intent.ACTION_TIMEZONE_CHANGED,
         Intent.ACTION_MY_PACKAGE_REPLACED,
+        // Without it, the alarm set while exact alarms were off stays inexact until the next Task change.
+        AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED,
       )
 
     for (action in systemEvents) {
