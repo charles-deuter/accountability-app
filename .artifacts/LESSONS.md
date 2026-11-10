@@ -42,3 +42,8 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 
 **Wrong:** I ranked screenshots as the session's largest token cost from the characters of their saved image data, and wrote a "uiautomator dump first" rule on that basis. Image tokens are charged by pixel size, about 1,500 for a 700-pixel-wide screenshot, so 16 cost about 25k tokens. A full dump can cost more, and it hides ellipsized text.
 **Rule:** Estimate an image's tokens from its pixel size, never its byte size. Check a cost claim before writing a rule on it.
+
+## 2026-11-10: a keep-awake loop clicked through onboarding on the Pixel
+
+**Wrong:** I ran the Pixel guide's keep-awake loop (`input keyevent KEYCODE_UNKNOWN` every 5 seconds) while checking ticket 11's onboarding. Each keypress activated the focused control: it finished onboarding, opened two steps and switched on a Settings toggle. I first put those actions down to Charlie.
+**Rule:** Inject no input in the background while checking UI on a device. Before putting a device action down to a person, line it up with adbd's command log.
