@@ -42,3 +42,8 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 
 **Wrong:** I ranked screenshots as the session's largest token cost from the characters of their saved image data, and wrote a "uiautomator dump first" rule on that basis. Image tokens are charged by pixel size, about 1,500 for a 700-pixel-wide screenshot, so 16 cost about 25k tokens. A full dump can cost more, and it hides ellipsized text.
 **Rule:** Estimate an image's tokens from its pixel size, never its byte size. Check a cost claim before writing a rule on it.
+
+## 2026-11-10: I blamed slow device runs on the system, then on my branch
+
+**Wrong:** Ticket 13's device suite took 150–234 s. I blamed the system and restarted the emulator, then blamed my branch from a bisect run later on a quiet emulator. The branch ran in 17 s once quiet; the slow runs overlapped another session's Gradle build and post-boot app compilation.
+**Rule:** Before blaming a slow run on code, time `main` and the branch back to back under the same load (check `/proc/loadavg` on the emulator and `uptime` on the Mac).
