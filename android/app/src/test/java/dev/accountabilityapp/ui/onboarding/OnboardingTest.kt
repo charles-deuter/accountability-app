@@ -1,6 +1,8 @@
 package dev.accountabilityapp.ui.onboarding
 
+import android.Manifest.permission.POST_NOTIFICATIONS
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -18,6 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowActivity
 
 @RunWith(AndroidJUnit4::class)
 class OnboardingTest {
@@ -34,12 +37,11 @@ class OnboardingTest {
 
   @Test
   @Config(sdk = [34])
-  fun onAndroid14_eachStepsButton_opensItsScreenInSettings() {
+  fun onAndroid14_theSettingsSteps_eachOpenTheirScreenInSettings() {
     showOnboarding(FakePermissionSource())
     val packageUri = "package:dev.accountabilityapp"
     val expectedScreens =
       listOf(
-        NOTIFICATIONS_BUTTON to SettingsScreen("android.settings.APP_NOTIFICATION_SETTINGS", data = null, appPackage = "dev.accountabilityapp"),
         FULL_SCREEN_BUTTON to SettingsScreen("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT", data = packageUri),
         EXACT_ALARMS_BUTTON to SettingsScreen("android.settings.REQUEST_SCHEDULE_EXACT_ALARM", data = packageUri),
         BATTERY_BUTTON to SettingsScreen("android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", data = packageUri),
@@ -50,6 +52,34 @@ class OnboardingTest {
       val started = shadowOf(composeTestRule.activity).nextStartedActivity
       assertEquals(button, expectedScreen, settingsScreenOf(started))
     }
+  }
+
+  @Test
+  @Config(sdk = [33])
+  fun onAndroid13_theNotificationsStep_asksInOneTap_andAnswerNoLeavesTheUserOnOnboarding() {
+    showOnboarding(FakePermissionSource())
+
+    composeTestRule.onNodeWithText(NOTIFICATIONS_BUTTON).performScrollTo().performClick()
+    val request = shadowOf(composeTestRule.activity).lastRequestedPermission
+    // The user saw the dialog and said no, so Android would show it again next time.
+    shadowOf(composeTestRule.activity.packageManager).setShouldShowRequestPermissionRationale(POST_NOTIFICATIONS, true)
+    answerPermissionRequest(request, PackageManager.PERMISSION_DENIED)
+
+    assertEquals(listOf(POST_NOTIFICATIONS), request?.requestedPermissions?.toList())
+    assertEquals(emptyList<SettingsScreen>(), settingsScreensOpened())
+  }
+
+  @Test
+  @Config(sdk = [33])
+  fun whenAndroidWontAskForNotificationsAgain_theNotificationsStep_opensNotificationSettings() {
+    showOnboarding(FakePermissionSource())
+
+    composeTestRule.onNodeWithText(NOTIFICATIONS_BUTTON).performScrollTo().performClick()
+    // After two refusals Android answers no at once, without a dialog, and stops offering a rationale.
+    answerPermissionRequest(shadowOf(composeTestRule.activity).lastRequestedPermission, PackageManager.PERMISSION_DENIED)
+
+    val expectedScreen = SettingsScreen("android.settings.APP_NOTIFICATION_SETTINGS", data = null, appPackage = "dev.accountabilityapp")
+    assertEquals(listOf(expectedScreen), settingsScreensOpened())
   }
 
   @Test
@@ -65,6 +95,22 @@ class OnboardingTest {
 
     composeTestRule.onNodeWithText("Exact alarms allowed").assertExists()
     composeTestRule.onNodeWithText(EXACT_ALARMS_BUTTON).assertDoesNotExist()
+  }
+
+  private fun answerPermissionRequest(request: ShadowActivity.PermissionsRequest?, result: Int) {
+    val requestedPermissions = request?.requestedPermissions ?: emptyArray()
+    val results = IntArray(requestedPermissions.size, init = { _ -> result })
+    @Suppress("DEPRECATION") // How Android delivers the answer; the Activity Result API reads it from here.
+    composeTestRule.activity.onRequestPermissionsResult(request?.requestCode ?: -1, requestedPermissions, results)
+    composeTestRule.waitForIdle()
+  }
+
+  /** Every Settings screen the app has opened so far, leaving out the permission dialog. */
+  private fun settingsScreensOpened(): List<SettingsScreen> {
+    val activity = shadowOf(composeTestRule.activity)
+    val started = generateSequence({ -> activity.nextStartedActivity }).toList()
+    val settings = started.filter({ intent -> intent.action?.startsWith("android.settings.") == true })
+    return settings.map(::settingsScreenOf)
   }
 
   private fun leaveForSettings() {

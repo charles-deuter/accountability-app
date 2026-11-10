@@ -1,6 +1,10 @@
 package dev.accountabilityapp.ui.onboarding
 
+import android.Manifest
 import android.os.Build
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -59,14 +63,34 @@ fun OnboardingRoute(
   })
   val openSettings: (Grant) -> Unit = { grant -> context.startActivity(settingsIntentOf(grant, context.packageName)) }
 
-  OnboardingScreen(steps = steps, onOpenSettings = openSettings, onFinish = onFinish, modifier = modifier)
+  // Notifications take one tap in the system dialog, as on the Task Form. After two refusals Android stops showing the
+  // dialog and answers no at once; only then does the step open notification settings instead.
+  val activity = LocalActivity.current
+  var couldExplainBeforeAsking by remember({ -> mutableStateOf(false) })
+  val notificationRequest =
+    rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission(), onResult = { isGranted ->
+      val canAskAgain = activity?.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) == true
+      val androidWontAsk = !isGranted && !couldExplainBeforeAsking && !canAskAgain
+      if (androidWontAsk) openSettings(Grant.NOTIFICATIONS)
+      steps = onboardingStepsFrom(permissionSource, sdkLevel)
+    })
+  val allowGrant: (Grant) -> Unit = { grant ->
+    if (grant == Grant.NOTIFICATIONS) {
+      couldExplainBeforeAsking = activity?.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) == true
+      notificationRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+      openSettings(grant)
+    }
+  }
+
+  OnboardingScreen(steps = steps, onAllowGrant = allowGrant, onFinish = onFinish, modifier = modifier)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
   steps: List<OnboardingStep>,
-  onOpenSettings: (Grant) -> Unit,
+  onAllowGrant: (Grant) -> Unit,
   onFinish: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
@@ -77,7 +101,7 @@ fun OnboardingScreen(
     ) {
       Text(stringResource(R.string.onboarding_intro), style = MaterialTheme.typography.bodyLarge)
       for (step in steps) {
-        StepCard(step, onOpenSettings = { -> onOpenSettings(step.grant) })
+        StepCard(step, onAllow = { -> onAllowGrant(step.grant) })
       }
       Button(onClick = onFinish, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.onboarding_continue)) }
     }
@@ -85,7 +109,7 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun StepCard(step: OnboardingStep, onOpenSettings: () -> Unit) {
+private fun StepCard(step: OnboardingStep, onAllow: () -> Unit) {
   val text = stepTextOf(step.grant)
   Card(modifier = Modifier.fillMaxWidth()) {
     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -97,7 +121,7 @@ private fun StepCard(step: OnboardingStep, onOpenSettings: () -> Unit) {
           Text(stringResource(text.done), color = MaterialTheme.colorScheme.primary)
         }
       } else {
-        OutlinedButton(onClick = onOpenSettings) { Text(stringResource(text.action)) }
+        OutlinedButton(onClick = onAllow) { Text(stringResource(text.action)) }
       }
     }
   }
@@ -157,7 +181,7 @@ private fun OnboardingScreenPreview() {
           OnboardingStep(Grant.EXACT_ALARMS, isGranted = false),
           OnboardingStep(Grant.BATTERY_EXEMPTION, isGranted = false),
         ),
-      onOpenSettings = { _ -> },
+      onAllowGrant = { _ -> },
       onFinish = { -> },
     )
   }
