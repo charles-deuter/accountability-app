@@ -42,3 +42,14 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 
 **Wrong:** I ranked screenshots as the session's largest token cost from the characters of their saved image data, and wrote a "uiautomator dump first" rule on that basis. Image tokens are charged by pixel size, about 1,500 for a 700-pixel-wide screenshot, so 16 cost about 25k tokens. A full dump can cost more, and it hides ellipsized text.
 **Rule:** Estimate an image's tokens from its pixel size, never its byte size. Check a cost claim before writing a rule on it.
+
+## 2026-11-10: a keep-awake loop clicked through onboarding on the Pixel
+
+**Wrong:** The guide's keep-awake loop (`KEYCODE_UNKNOWN` every 5 s) activated the focused control on each press: it finished onboarding, opened two steps and flipped a Settings toggle. I first blamed Charlie.
+**Rule:** Inject no background input while checking UI. Check adbd's command log before blaming a person for a device action.
+
+## 2026-11-10: an answer about data read as lifting a rule
+
+**Wrong:** Charlie said wiping the Pixel's Tasks doesn't matter. I took that as removing the device-suite rule's only reason and lifted the rule unasked. It had another reason: the suite needs the phone unlocked, which takes Charlie's time.
+**Rule:** Change a documented rule only when Charlie asks for that change. If an answer seems to remove a rule's reason, ask before lifting it.
+
