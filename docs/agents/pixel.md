@@ -5,7 +5,7 @@ Charlie's Pixel 10a (serial `5A091JEA316773`) is the real device for checks the 
 ## Installing
 
 - Start every check from a blank install: `adb uninstall dev.accountabilityapp`, then `adb install <apk>`. Charlie asked for this on 2026-11-10, so no check waits on leftover state.
-- `connectedDebugAndroidTest` may run on the Pixel; it uninstalls the app when it finishes. Gradle runs it on every connected device, so with the emulator also attached, set `ANDROID_SERIAL` to pick one.
+- Run `connectedDebugAndroidTest` on the emulator only. It needs the screen unlocked for the whole run, which on the Pixel takes Charlie's time. Gradle runs it on every connected device, so while the Pixel is attached, set `ANDROID_SERIAL` to the emulator's serial.
 - A blank install starts with notifications, exact alarms and the battery exemption off, and opens onboarding on first launch. When a check doesn't cover onboarding, grant what it needs and tap Continue: `adb shell pm grant dev.accountabilityapp android.permission.POST_NOTIFICATIONS`, `adb shell appops set dev.accountabilityapp SCHEDULE_EXACT_ALARM allow`.
 - Leave `--no-restart` off `am instrument`; on this phone it hangs. Instrumentation force-stops the app when it starts and when it finishes, which cancels its alarms, so launch the app afterwards (`adb shell am start -n dev.accountabilityapp/.MainActivity`) to reschedule them.
 - `adb shell` drops quotes, so an `am instrument -e` value with a space fails with `Invalid userId`. Use values without spaces.

@@ -45,5 +45,11 @@ Corrections log. Each entry: what went wrong, and the rule that would have caugh
 
 ## 2026-11-10: a keep-awake loop clicked through onboarding on the Pixel
 
-**Wrong:** I ran the Pixel guide's keep-awake loop (`input keyevent KEYCODE_UNKNOWN` every 5 seconds) while checking ticket 11's onboarding. Each keypress activated the focused control: it finished onboarding, opened two steps and switched on a Settings toggle. I first put those actions down to Charlie.
-**Rule:** Inject no input in the background while checking UI on a device. Before putting a device action down to a person, line it up with adbd's command log.
+**Wrong:** The guide's keep-awake loop (`KEYCODE_UNKNOWN` every 5 s) activated the focused control on each press: it finished onboarding, opened two steps and flipped a Settings toggle. I first blamed Charlie.
+**Rule:** Inject no background input while checking UI. Check adbd's command log before blaming a person for a device action.
+
+## 2026-11-10: an answer about data read as lifting a rule
+
+**Wrong:** Charlie said wiping the Pixel's Tasks doesn't matter. I took that as removing the device-suite rule's only reason and lifted the rule unasked. It had another reason: the suite needs the phone unlocked, which takes Charlie's time.
+**Rule:** Change a documented rule only when Charlie asks for that change. If an answer seems to remove a rule's reason, ask before lifting it.
+
