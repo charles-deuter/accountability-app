@@ -1,6 +1,7 @@
 package dev.accountabilityapp
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
@@ -16,7 +17,8 @@ import dev.accountabilityapp.ui.tasklist.TaskListRoute
 @Composable
 fun MainNavigation() {
   val context = LocalContext.current
-  val isFirstLaunch = !isOnboardingComplete(context)
+  // Read once: only the start key depends on it, and it is a disk read.
+  val isFirstLaunch = remember({ -> !isOnboardingComplete(context) })
   val startKey = if (isFirstLaunch) Onboarding else TaskList
   val backStack = rememberNavBackStack(startKey)
   // On first launch Onboarding is the only entry, so finishing puts the Task List beneath it before leaving. Opened from
@@ -40,7 +42,7 @@ fun MainNavigation() {
           TaskListRoute(
             onAddTask = { -> backStack.add(AddTask) },
             onEditTask = { taskId -> backStack.add(EditTask(taskId)) },
-            onFixGrants = { -> backStack.add(Onboarding) },
+            onFixGrants = { -> if (Onboarding !in backStack) backStack.add(Onboarding) },
           )
         }
         entry<AddTask> { TaskFormRoute(taskId = null, onDone = { -> backStack.removeLastOrNull() }) }

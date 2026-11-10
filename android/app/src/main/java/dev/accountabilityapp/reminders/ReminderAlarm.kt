@@ -36,7 +36,7 @@ class ReminderAlarm(private val context: Context) {
   }
 }
 
-private fun canScheduleExactAlarms(alarmManager: AlarmManager): Boolean {
+fun canScheduleExactAlarms(alarmManager: AlarmManager): Boolean {
   // Before Android 12, exact alarms need no permission.
   val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
   return !needsPermission || alarmManager.canScheduleExactAlarms()

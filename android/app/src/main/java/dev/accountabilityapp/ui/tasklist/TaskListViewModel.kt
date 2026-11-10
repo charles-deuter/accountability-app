@@ -36,6 +36,7 @@ data class TaskListItem(
 enum class GrantWarning {
   /** Only exact alarms are missing: Reminders still ring, but Android may deliver them minutes late. */
   REMINDERS_MAY_RUN_LATE,
+  /** Notifications, full-screen reminders or the battery exemption are missing: some Reminders may not ring at all. */
   REMINDERS_MAY_NOT_RING,
 }
 
