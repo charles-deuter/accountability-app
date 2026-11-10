@@ -113,8 +113,12 @@ class LandscapeTest {
         state = state,
         onTitleChange = { _ -> },
         onScheduledTimeChange = { _ -> },
+        onRepeatChange = { _ -> },
+        onWeekdayToggle = { _ -> },
+        onPausedChange = { _ -> },
         onSave = { -> },
         onDelete = { -> },
+        onSkip = { -> },
         onBack = { -> },
         zone = ZoneOffset.UTC,
       )

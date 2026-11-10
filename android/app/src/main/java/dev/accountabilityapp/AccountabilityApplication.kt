@@ -28,14 +28,14 @@ class AccountabilityApplication : Application() {
  */
 class AppContainer(
   context: Context,
-  val clock: Clock = Clock.systemDefaultZone(),
+  val clock: Clock = PhoneClock(),
   val database: AppDatabase = AppDatabase.open(context),
 ) {
   /** For work that must outlive a screen, such as a broadcast receiver's database read. */
   val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
   val reminderSync: ReminderSync =
     ReminderSync(database.taskDao(), clock, ReminderAlarm(context), ReminderNotifications(context))
-  val taskService: TaskService = TaskService(database.taskDao(), clock, reminderSync)
+  val taskService: TaskService = TaskService(database, clock, reminderSync)
 }
 
 /**

@@ -1,6 +1,7 @@
 package dev.accountabilityapp.ui
 
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -14,3 +15,5 @@ fun formatDateTime(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): Str
 fun formatDate(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): String = dateFormatter.format(instant.atZone(zone))
 
 fun formatTime(instant: Instant, zone: ZoneId = ZoneId.systemDefault()): String = timeFormatter.format(instant.atZone(zone))
+
+fun formatTimeOfDay(timeOfDay: LocalTime): String = timeFormatter.format(timeOfDay)

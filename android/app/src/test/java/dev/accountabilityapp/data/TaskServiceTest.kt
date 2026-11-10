@@ -128,7 +128,6 @@ class TaskServiceTest {
 
     assertEquals(Instant.parse("2026-10-22T09:01:00Z"), added)
     assertEquals(Instant.parse("2026-10-22T10:01:00Z"), edited.scheduledTime)
-    assertEquals(Instant.parse("2026-10-22T10:01:00Z"), edited.originalScheduledTime)
   })
 
   @Test
@@ -143,7 +142,7 @@ class TaskServiceTest {
   })
 
   @Test
-  fun reschedulingASnoozedTask_endsTheSnooze_andTheSnoozeCountStaysAsHistory() = runTest(testBody = { ->
+  fun reschedulingASnoozedTask_endsTheSnooze_andTheSnoozeCountAndOriginalTimeStayAsHistory() = runTest(testBody = { ->
     val taskId = taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T11:00:00Z"))
     taskService.snooze(taskId, SnoozeDuration.ONE_HOUR)
 
@@ -153,7 +152,7 @@ class TaskServiceTest {
     assertEquals(TaskStatus.PENDING, edited.status)
     assertEquals(1, edited.snoozeCount)
     assertEquals(Instant.parse("2026-10-21T18:00:00Z"), edited.scheduledTime)
-    assertEquals(Instant.parse("2026-10-21T18:00:00Z"), edited.originalScheduledTime)
+    assertEquals(Instant.parse("2026-10-21T11:00:00Z"), edited.originalScheduledTime)
   })
 
   @Test

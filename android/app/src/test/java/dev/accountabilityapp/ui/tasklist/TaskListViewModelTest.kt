@@ -8,9 +8,11 @@ import dev.accountabilityapp.AppContainer
 import dev.accountabilityapp.MainDispatcherRule
 import dev.accountabilityapp.SettableClock
 import dev.accountabilityapp.data.AppDatabase
+import dev.accountabilityapp.data.Recurrence
 import dev.accountabilityapp.data.SnoozeDuration
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneOffset
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -50,6 +52,17 @@ class TaskListViewModelTest {
     val items = viewModel.uiState.first({ state -> state.items.size == 2 }).items
 
     assertEquals(mapOf("Take meds" to true, "Call dentist" to false), items.associate({ item -> item.title to item.isOverdue }))
+  })
+
+  @Test
+  fun anInstance_isMarkedRecurring_andAOneOffTaskIsNot() = runTest(testBody = { ->
+    taskService.addRecurring(title = "Take meds", recurrence = Recurrence.Daily, timeOfDay = LocalTime.of(9, 0), isActive = true)
+    taskService.add(title = "Call dentist", scheduledTime = Instant.parse("2026-10-21T13:00:00Z"))
+    val viewModel = TaskListViewModel(taskService, noon)
+
+    val items = viewModel.uiState.first({ state -> state.items.size == 2 }).items
+
+    assertEquals(mapOf("Take meds" to true, "Call dentist" to false), items.associate({ item -> item.title to item.isRecurring }))
   })
 
   @Test
